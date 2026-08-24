@@ -1,0 +1,12 @@
+# test log
+getenv BOOL_TRUE
+getenv BOOL_FALSE
+getenv BOOL_TRUE
+getenv BOOL_FALSE
+getenv BOOL_MISSING
+open C:\Users\lenovo\AppData\Local\Temp\TestReadPCM16WavWithListChunk1539433062\001\voice.wav
+open C:\Users\lenovo\AppData\Local\Temp\TestReadPCM16WavWithListChunk1539433062\001\voice.wav
+stat C:\Users\lenovo\AppData\Local\Temp\TestReadPCM16WavWithListChunk1539433062
+open C:\Users\lenovo\AppData\Local\Temp\TestReadPCM16WavWithListChunk1539433062
+stat C:\Users\lenovo\AppData\Local\Temp\TestReadPCM16WavWithListChunk1539433062\001
+open C:\Users\lenovo\AppData\Local\Temp\TestReadPCM16WavWithListChunk1539433062\001

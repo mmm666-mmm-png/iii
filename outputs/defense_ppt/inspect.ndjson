@@ -1,0 +1,842 @@
+{"kind":"deck","id":"ai-glass-defense","slideCount":14,"slideSize":{"width":1280,"height":720}}
+{"kind":"slide","slide":1,"id":"slide-1"}
+{"kind":"shape","slide":1,"id":"2","role":"rect","shapeType":"rect","bbox":[0,0,1280,720]}
+{"kind":"shape","slide":1,"id":"3","role":"rect","shapeType":"rect","bbox":[0,0,1280,12]}
+{"kind":"shape","slide":1,"id":"4","role":"ellipse","shapeType":"ellipse","bbox":[-92,516,260,260]}
+{"kind":"shape","slide":1,"id":"5","role":"ellipse","shapeType":"ellipse","bbox":[1078,-120,260,260]}
+{"kind":"shape","slide":1,"id":"6","role":"ellipse","shapeType":"ellipse","bbox":[94,656,5,5]}
+{"kind":"shape","slide":1,"id":"7","role":"ellipse","shapeType":"ellipse","bbox":[128,656,5,5]}
+{"kind":"shape","slide":1,"id":"8","role":"ellipse","shapeType":"ellipse","bbox":[162,656,5,5]}
+{"kind":"shape","slide":1,"id":"9","role":"ellipse","shapeType":"ellipse","bbox":[196,656,5,5]}
+{"kind":"shape","slide":1,"id":"10","role":"ellipse","shapeType":"ellipse","bbox":[230,656,5,5]}
+{"kind":"shape","slide":1,"id":"11","role":"ellipse","shapeType":"ellipse","bbox":[264,656,5,5]}
+{"kind":"shape","slide":1,"id":"12","role":"ellipse","shapeType":"ellipse","bbox":[298,656,5,5]}
+{"kind":"shape","slide":1,"id":"13","role":"ellipse","shapeType":"ellipse","bbox":[332,656,5,5]}
+{"kind":"shape","slide":1,"id":"14","role":"rect","shapeType":"rect","bbox":[0,0,1280,720]}
+{"kind":"shape","slide":1,"id":"15","role":"rect","shapeType":"rect","bbox":[64,96,8,438]}
+{"kind":"shape","slide":1,"id":"16","role":"rect","shapeType":"rect","bbox":[92,98,220,26]}
+{"kind":"textbox","slide":1,"id":"16","role":"text","text":"毕业设计答辩","textPreview":"毕业设计答辩","textChars":6,"textLines":1,"bbox":[92,98,220,26]}
+{"kind":"shape","slide":1,"id":"17","role":"rect","shapeType":"rect","bbox":[90,150,720,154]}
+{"kind":"textbox","slide":1,"id":"17","role":"text","text":"基于 ESP32 智能眼镜的\n视觉导航与语音交互系统","textPreview":"基于 ESP32 智能眼镜的 | 视觉导航与语音交互系统","textChars":26,"textLines":2,"bbox":[90,150,720,154]}
+{"kind":"shape","slide":1,"id":"18","role":"rect","shapeType":"rect","bbox":[94,332,650,58]}
+{"kind":"textbox","slide":1,"id":"18","role":"text","text":"面向视障出行辅助场景，构建低成本可穿戴硬件、实时视觉感知与自然语音交互的一体化原型。","textPreview":"面向视障出行辅助场景，构建低成本可穿戴硬件、实时视觉感知与自然语音交互的一体化原型。","textChars":42,"textLines":1,"bbox":[94,332,650,58]}
+{"kind":"shape","slide":1,"id":"19","role":"roundRect","shapeType":"roundRect","bbox":[94,422,164,34]}
+{"kind":"shape","slide":1,"id":"20","role":"rect","shapeType":"rect","bbox":[108,429,136,18]}
+{"kind":"textbox","slide":1,"id":"20","role":"text","text":"ESP32-S3 Sense","textPreview":"ESP32-S3 Sense","textChars":14,"textLines":1,"bbox":[108,429,136,18]}
+{"kind":"shape","slide":1,"id":"21","role":"roundRect","shapeType":"roundRect","bbox":[274,422,148,34]}
+{"kind":"shape","slide":1,"id":"22","role":"rect","shapeType":"rect","bbox":[288,429,120,18]}
+{"kind":"textbox","slide":1,"id":"22","role":"text","text":"YOLO / YOLOE","textPreview":"YOLO / YOLOE","textChars":12,"textLines":1,"bbox":[288,429,120,18]}
+{"kind":"shape","slide":1,"id":"23","role":"roundRect","shapeType":"roundRect","bbox":[438,422,146,34]}
+{"kind":"shape","slide":1,"id":"24","role":"rect","shapeType":"rect","bbox":[452,429,118,18]}
+{"kind":"textbox","slide":1,"id":"24","role":"text","text":"DashScope AI","textPreview":"DashScope AI","textChars":12,"textLines":1,"bbox":[452,429,118,18]}
+{"kind":"shape","slide":1,"id":"25","role":"roundRect","shapeType":"roundRect","bbox":[92,500,488,86]}
+{"kind":"shape","slide":1,"id":"26","role":"rect","shapeType":"rect","bbox":[118,522,432,42]}
+{"kind":"textbox","slide":1,"id":"26","role":"text","text":"汇报人：XXX    指导教师：XXX\n学院/专业：XXX    日期：2026 年 5 月","textPreview":"汇报人：XXX    指导教师：XXX | 学院/专业：XXX    日期：2026 年 5 月","textChars":46,"textLines":2,"bbox":[118,522,432,42]}
+{"kind":"shape","slide":1,"id":"27","role":"roundRect","shapeType":"roundRect","bbox":[850,72,274,220]}
+{"kind":"image","slide":1,"id":"28","role":"visual asset","path":"C:\\Users\\lenovo\\Desktop\\毕设\\OpenAIglasses_for_Navigation\\bs\\esp32-glass-all\\esp32-glass-front\\src\\assets\\hero.png","bbox":[872,88,230,188]}
+{"kind":"shape","slide":1,"id":"29","role":"roundRect","shapeType":"roundRect","bbox":[854,282,238,162]}
+{"kind":"shape","slide":1,"id":"30","role":"roundRect","shapeType":"roundRect","bbox":[874,310,198,110]}
+{"kind":"shape","slide":1,"id":"31","role":"ellipse","shapeType":"ellipse","bbox":[945,335,56,56]}
+{"kind":"shape","slide":1,"id":"32","role":"ellipse","shapeType":"ellipse","bbox":[960,350,26,26]}
+{"kind":"shape","slide":1,"id":"33","role":"ellipse","shapeType":"ellipse","bbox":[874,416,18,18]}
+{"kind":"shape","slide":1,"id":"34","role":"ellipse","shapeType":"ellipse","bbox":[1054,416,18,18]}
+{"kind":"shape","slide":1,"id":"35","role":"rect","shapeType":"rect","bbox":[945,401,56,16]}
+{"kind":"textbox","slide":1,"id":"35","role":"text","text":"CAM","textPreview":"CAM","textChars":3,"textLines":1,"bbox":[945,401,56,16]}
+{"kind":"shape","slide":1,"id":"36","role":"rect","shapeType":"rect","bbox":[820,505,310,28]}
+{"kind":"textbox","slide":1,"id":"36","role":"text","text":"采集 → 识别 → 决策 → 语音提示","textPreview":"采集 → 识别 → 决策 → 语音提示","textChars":19,"textLines":1,"bbox":[820,505,310,28]}
+{"kind":"slide","slide":2,"id":"slide-2"}
+{"kind":"shape","slide":2,"id":"2","role":"rect","shapeType":"rect","bbox":[0,0,1280,720]}
+{"kind":"shape","slide":2,"id":"3","role":"rect","shapeType":"rect","bbox":[0,0,1280,12]}
+{"kind":"shape","slide":2,"id":"4","role":"ellipse","shapeType":"ellipse","bbox":[-92,516,260,260]}
+{"kind":"shape","slide":2,"id":"5","role":"ellipse","shapeType":"ellipse","bbox":[1078,-120,260,260]}
+{"kind":"shape","slide":2,"id":"6","role":"ellipse","shapeType":"ellipse","bbox":[94,656,5,5]}
+{"kind":"shape","slide":2,"id":"7","role":"ellipse","shapeType":"ellipse","bbox":[128,656,5,5]}
+{"kind":"shape","slide":2,"id":"8","role":"ellipse","shapeType":"ellipse","bbox":[162,656,5,5]}
+{"kind":"shape","slide":2,"id":"9","role":"ellipse","shapeType":"ellipse","bbox":[196,656,5,5]}
+{"kind":"shape","slide":2,"id":"10","role":"ellipse","shapeType":"ellipse","bbox":[230,656,5,5]}
+{"kind":"shape","slide":2,"id":"11","role":"ellipse","shapeType":"ellipse","bbox":[264,656,5,5]}
+{"kind":"shape","slide":2,"id":"12","role":"ellipse","shapeType":"ellipse","bbox":[298,656,5,5]}
+{"kind":"shape","slide":2,"id":"13","role":"ellipse","shapeType":"ellipse","bbox":[332,656,5,5]}
+{"kind":"shape","slide":2,"id":"14","role":"rect","shapeType":"rect","bbox":[64,33,88,24]}
+{"kind":"textbox","slide":2,"id":"14","role":"text","text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[64,33,88,24]}
+{"kind":"shape","slide":2,"id":"15","role":"rect","shapeType":"rect","bbox":[154,32,500,26]}
+{"kind":"textbox","slide":2,"id":"15","role":"text","text":"研究背景与意义","textPreview":"研究背景与意义","textChars":7,"textLines":1,"bbox":[154,32,500,26]}
+{"kind":"shape","slide":2,"id":"16","role":"rect","shapeType":"rect","bbox":[1118,32,98,24]}
+{"kind":"textbox","slide":2,"id":"16","role":"text","text":"02 / 14","textPreview":"02 / 14","textChars":7,"textLines":1,"bbox":[1118,32,98,24]}
+{"kind":"shape","slide":2,"id":"17","role":"rect","shapeType":"rect","bbox":[64,65,1152,1.5]}
+{"kind":"shape","slide":2,"id":"18","role":"rect","shapeType":"rect","bbox":[64,92,730,62]}
+{"kind":"textbox","slide":2,"id":"18","role":"text","text":"研究背景与意义","textPreview":"研究背景与意义","textChars":7,"textLines":1,"bbox":[64,92,730,62]}
+{"kind":"shape","slide":2,"id":"19","role":"rect","shapeType":"rect","bbox":[66,156,760,46]}
+{"kind":"textbox","slide":2,"id":"19","role":"text","text":"视障出行需要把“看见环境”和“理解环境”转化为低负担、实时的语音提示。","textPreview":"视障出行需要把“看见环境”和“理解环境”转化为低负担、实时的语音提示。","textChars":35,"textLines":1,"bbox":[66,156,760,46]}
+{"kind":"shape","slide":2,"id":"20","role":"roundRect","shapeType":"roundRect","bbox":[86,260,330,190]}
+{"kind":"shape","slide":2,"id":"21","role":"rect","shapeType":"rect","bbox":[86,260,7,190]}
+{"kind":"shape","slide":2,"id":"22","role":"ellipse","shapeType":"ellipse","bbox":[108,284,38,38]}
+{"kind":"shape","slide":2,"id":"23","role":"rect","shapeType":"rect","bbox":[108,291,38,18]}
+{"kind":"textbox","slide":2,"id":"23","role":"text","text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[108,291,38,18]}
+{"kind":"shape","slide":2,"id":"24","role":"rect","shapeType":"rect","bbox":[162,285,232,30]}
+{"kind":"textbox","slide":2,"id":"24","role":"text","text":"实时环境感知不足","textPreview":"实时环境感知不足","textChars":8,"textLines":1,"bbox":[162,285,232,30]}
+{"kind":"shape","slide":2,"id":"25","role":"rect","shapeType":"rect","bbox":[112,328,278,106]}
+{"kind":"textbox","slide":2,"id":"25","role":"text","text":"传统辅助方式难以及时识别盲道偏离、前方障碍、斑马线位置和红绿灯状态。","textPreview":"传统辅助方式难以及时识别盲道偏离、前方障碍、斑马线位置和红绿灯状态。","textChars":34,"textLines":1,"bbox":[112,328,278,106]}
+{"kind":"shape","slide":2,"id":"26","role":"roundRect","shapeType":"roundRect","bbox":[475,260,330,190]}
+{"kind":"shape","slide":2,"id":"27","role":"rect","shapeType":"rect","bbox":[475,260,7,190]}
+{"kind":"shape","slide":2,"id":"28","role":"ellipse","shapeType":"ellipse","bbox":[497,284,38,38]}
+{"kind":"shape","slide":2,"id":"29","role":"rect","shapeType":"rect","bbox":[497,291,38,18]}
+{"kind":"textbox","slide":2,"id":"29","role":"text","text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[497,291,38,18]}
+{"kind":"shape","slide":2,"id":"30","role":"rect","shapeType":"rect","bbox":[551,285,232,30]}
+{"kind":"textbox","slide":2,"id":"30","role":"text","text":"交互方式不够自然","textPreview":"交互方式不够自然","textChars":8,"textLines":1,"bbox":[551,285,232,30]}
+{"kind":"shape","slide":2,"id":"31","role":"rect","shapeType":"rect","bbox":[501,328,278,106]}
+{"kind":"textbox","slide":2,"id":"31","role":"text","text":"用户在行走时不适合频繁看屏幕，需要通过语音命令启动导航、问答或寻物流程。","textPreview":"用户在行走时不适合频繁看屏幕，需要通过语音命令启动导航、问答或寻物流程。","textChars":36,"textLines":1,"bbox":[501,328,278,106]}
+{"kind":"shape","slide":2,"id":"32","role":"roundRect","shapeType":"roundRect","bbox":[864,260,330,190]}
+{"kind":"shape","slide":2,"id":"33","role":"rect","shapeType":"rect","bbox":[864,260,7,190]}
+{"kind":"shape","slide":2,"id":"34","role":"ellipse","shapeType":"ellipse","bbox":[886,284,38,38]}
+{"kind":"shape","slide":2,"id":"35","role":"rect","shapeType":"rect","bbox":[886,291,38,18]}
+{"kind":"textbox","slide":2,"id":"35","role":"text","text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[886,291,38,18]}
+{"kind":"shape","slide":2,"id":"36","role":"rect","shapeType":"rect","bbox":[940,285,232,30]}
+{"kind":"textbox","slide":2,"id":"36","role":"text","text":"落地成本与调试难度","textPreview":"落地成本与调试难度","textChars":9,"textLines":1,"bbox":[940,285,232,30]}
+{"kind":"shape","slide":2,"id":"37","role":"rect","shapeType":"rect","bbox":[890,328,278,106]}
+{"kind":"textbox","slide":2,"id":"37","role":"text","text":"端侧设备算力有限，系统还要兼顾低成本硬件、服务器推理、远程调试与部署维护。","textPreview":"端侧设备算力有限，系统还要兼顾低成本硬件、服务器推理、远程调试与部署维护。","textChars":37,"textLines":1,"bbox":[890,328,278,106]}
+{"kind":"shape","slide":2,"id":"38","role":"roundRect","shapeType":"roundRect","bbox":[130,532,1020,82]}
+{"kind":"shape","slide":2,"id":"39","role":"rect","shapeType":"rect","bbox":[166,552,140,24]}
+{"kind":"textbox","slide":2,"id":"39","role":"text","text":"本设计目标","textPreview":"本设计目标","textChars":5,"textLines":1,"bbox":[166,552,140,24]}
+{"kind":"shape","slide":2,"id":"40","role":"rect","shapeType":"rect","bbox":[316,551,760,32]}
+{"kind":"textbox","slide":2,"id":"40","role":"text","text":"用智能眼镜采集第一视角画面和语音，通过服务器侧视觉模型与实时 AI，把导航判断变成设备端可播放的中文提示。","textPreview":"用智能眼镜采集第一视角画面和语音，通过服务器侧视觉模型与实时 AI，把导航判断变成设备端可播放的中文提示。","textChars":53,"textLines":1,"bbox":[316,551,760,32]}
+{"kind":"slide","slide":3,"id":"slide-3"}
+{"kind":"shape","slide":3,"id":"2","role":"rect","shapeType":"rect","bbox":[0,0,1280,720]}
+{"kind":"shape","slide":3,"id":"3","role":"rect","shapeType":"rect","bbox":[0,0,1280,12]}
+{"kind":"shape","slide":3,"id":"4","role":"ellipse","shapeType":"ellipse","bbox":[-92,516,260,260]}
+{"kind":"shape","slide":3,"id":"5","role":"ellipse","shapeType":"ellipse","bbox":[1078,-120,260,260]}
+{"kind":"shape","slide":3,"id":"6","role":"ellipse","shapeType":"ellipse","bbox":[94,656,5,5]}
+{"kind":"shape","slide":3,"id":"7","role":"ellipse","shapeType":"ellipse","bbox":[128,656,5,5]}
+{"kind":"shape","slide":3,"id":"8","role":"ellipse","shapeType":"ellipse","bbox":[162,656,5,5]}
+{"kind":"shape","slide":3,"id":"9","role":"ellipse","shapeType":"ellipse","bbox":[196,656,5,5]}
+{"kind":"shape","slide":3,"id":"10","role":"ellipse","shapeType":"ellipse","bbox":[230,656,5,5]}
+{"kind":"shape","slide":3,"id":"11","role":"ellipse","shapeType":"ellipse","bbox":[264,656,5,5]}
+{"kind":"shape","slide":3,"id":"12","role":"ellipse","shapeType":"ellipse","bbox":[298,656,5,5]}
+{"kind":"shape","slide":3,"id":"13","role":"ellipse","shapeType":"ellipse","bbox":[332,656,5,5]}
+{"kind":"shape","slide":3,"id":"14","role":"rect","shapeType":"rect","bbox":[64,33,88,24]}
+{"kind":"textbox","slide":3,"id":"14","role":"text","text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[64,33,88,24]}
+{"kind":"shape","slide":3,"id":"15","role":"rect","shapeType":"rect","bbox":[154,32,500,26]}
+{"kind":"textbox","slide":3,"id":"15","role":"text","text":"需求分析与目标","textPreview":"需求分析与目标","textChars":7,"textLines":1,"bbox":[154,32,500,26]}
+{"kind":"shape","slide":3,"id":"16","role":"rect","shapeType":"rect","bbox":[1118,32,98,24]}
+{"kind":"textbox","slide":3,"id":"16","role":"text","text":"03 / 14","textPreview":"03 / 14","textChars":7,"textLines":1,"bbox":[1118,32,98,24]}
+{"kind":"shape","slide":3,"id":"17","role":"rect","shapeType":"rect","bbox":[64,65,1152,1.5]}
+{"kind":"shape","slide":3,"id":"18","role":"rect","shapeType":"rect","bbox":[64,92,730,62]}
+{"kind":"textbox","slide":3,"id":"18","role":"text","text":"需求分析与设计目标","textPreview":"需求分析与设计目标","textChars":9,"textLines":1,"bbox":[64,92,730,62]}
+{"kind":"shape","slide":3,"id":"19","role":"rect","shapeType":"rect","bbox":[66,156,760,46]}
+{"kind":"textbox","slide":3,"id":"19","role":"text","text":"围绕出行安全、交互效率和工程可落地性，把系统目标拆成 6 个可验证方向。","textPreview":"围绕出行安全、交互效率和工程可落地性，把系统目标拆成 6 个可验证方向。","textChars":36,"textLines":1,"bbox":[66,156,760,46]}
+{"kind":"shape","slide":3,"id":"20","role":"roundRect","shapeType":"roundRect","bbox":[86,246,326,132]}
+{"kind":"shape","slide":3,"id":"21","role":"rect","shapeType":"rect","bbox":[86,246,7,132]}
+{"kind":"shape","slide":3,"id":"22","role":"rect","shapeType":"rect","bbox":[112,269,274,30]}
+{"kind":"textbox","slide":3,"id":"22","role":"text","text":"实时性","textPreview":"实时性","textChars":3,"textLines":1,"bbox":[112,269,274,30]}
+{"kind":"shape","slide":3,"id":"23","role":"rect","shapeType":"rect","bbox":[112,314,274,48]}
+{"kind":"textbox","slide":3,"id":"23","role":"text","text":"视频帧、语音流和导航提示需要低延迟闭环，减少行走过程中的滞后感。","textPreview":"视频帧、语音流和导航提示需要低延迟闭环，减少行走过程中的滞后感。","textChars":32,"textLines":1,"bbox":[112,314,274,48]}
+{"kind":"shape","slide":3,"id":"24","role":"roundRect","shapeType":"roundRect","bbox":[468,246,326,132]}
+{"kind":"shape","slide":3,"id":"25","role":"rect","shapeType":"rect","bbox":[468,246,7,132]}
+{"kind":"shape","slide":3,"id":"26","role":"rect","shapeType":"rect","bbox":[494,269,274,30]}
+{"kind":"textbox","slide":3,"id":"26","role":"text","text":"低成本","textPreview":"低成本","textChars":3,"textLines":1,"bbox":[494,269,274,30]}
+{"kind":"shape","slide":3,"id":"27","role":"rect","shapeType":"rect","bbox":[494,314,274,48]}
+{"kind":"textbox","slide":3,"id":"27","role":"text","text":"使用 ESP32-S3 Sense 等低成本硬件，把重推理任务放到服务器。","textPreview":"使用 ESP32-S3 Sense 等低成本硬件，把重推理任务放到服务器。","textChars":37,"textLines":1,"bbox":[494,314,274,48]}
+{"kind":"shape","slide":3,"id":"28","role":"roundRect","shapeType":"roundRect","bbox":[850,246,326,132]}
+{"kind":"shape","slide":3,"id":"29","role":"rect","shapeType":"rect","bbox":[850,246,7,132]}
+{"kind":"shape","slide":3,"id":"30","role":"rect","shapeType":"rect","bbox":[876,269,274,30]}
+{"kind":"textbox","slide":3,"id":"30","role":"text","text":"多模式","textPreview":"多模式","textChars":3,"textLines":1,"bbox":[876,269,274,30]}
+{"kind":"shape","slide":3,"id":"31","role":"rect","shapeType":"rect","bbox":[876,314,274,48]}
+{"kind":"textbox","slide":3,"id":"31","role":"text","text":"支持导盲、过街、红绿灯检测、寻物和普通问答等模式切换。","textPreview":"支持导盲、过街、红绿灯检测、寻物和普通问答等模式切换。","textChars":27,"textLines":1,"bbox":[876,314,274,48]}
+{"kind":"shape","slide":3,"id":"32","role":"roundRect","shapeType":"roundRect","bbox":[86,416,326,132]}
+{"kind":"shape","slide":3,"id":"33","role":"rect","shapeType":"rect","bbox":[86,416,7,132]}
+{"kind":"shape","slide":3,"id":"34","role":"rect","shapeType":"rect","bbox":[112,439,274,30]}
+{"kind":"textbox","slide":3,"id":"34","role":"text","text":"可扩展","textPreview":"可扩展","textChars":3,"textLines":1,"bbox":[112,439,274,30]}
+{"kind":"shape","slide":3,"id":"35","role":"rect","shapeType":"rect","bbox":[112,484,274,48]}
+{"kind":"textbox","slide":3,"id":"35","role":"text","text":"后端通过 worker API 和 skill registry 组织视觉能力，方便继续加模型。","textPreview":"后端通过 worker API 和 skill registry 组织视觉能力，方便继续加模型。","textChars":48,"textLines":1,"bbox":[112,484,274,48]}
+{"kind":"shape","slide":3,"id":"36","role":"roundRect","shapeType":"roundRect","bbox":[468,416,326,132]}
+{"kind":"shape","slide":3,"id":"37","role":"rect","shapeType":"rect","bbox":[468,416,7,132]}
+{"kind":"shape","slide":3,"id":"38","role":"rect","shapeType":"rect","bbox":[494,439,274,30]}
+{"kind":"textbox","slide":3,"id":"38","role":"text","text":"可调试","textPreview":"可调试","textChars":3,"textLines":1,"bbox":[494,439,274,30]}
+{"kind":"shape","slide":3,"id":"39","role":"rect","shapeType":"rect","bbox":[494,484,274,48]}
+{"kind":"textbox","slide":3,"id":"39","role":"text","text":"前端展示实时画面、标注图、模式状态、语音事件和流质量指标。","textPreview":"前端展示实时画面、标注图、模式状态、语音事件和流质量指标。","textChars":29,"textLines":1,"bbox":[494,484,274,48]}
+{"kind":"shape","slide":3,"id":"40","role":"roundRect","shapeType":"roundRect","bbox":[850,416,326,132]}
+{"kind":"shape","slide":3,"id":"41","role":"rect","shapeType":"rect","bbox":[850,416,7,132]}
+{"kind":"shape","slide":3,"id":"42","role":"rect","shapeType":"rect","bbox":[876,439,274,30]}
+{"kind":"textbox","slide":3,"id":"42","role":"text","text":"可部署","textPreview":"可部署","textChars":3,"textLines":1,"bbox":[876,439,274,30]}
+{"kind":"shape","slide":3,"id":"43","role":"rect","shapeType":"rect","bbox":[876,484,274,48]}
+{"kind":"textbox","slide":3,"id":"43","role":"text","text":"提供 Windows/Linux 启动脚本、Nginx/systemd 部署说明和验收命令。","textPreview":"提供 Windows/Linux 启动脚本、Nginx/systemd 部署说明和验收命令。","textChars":46,"textLines":1,"bbox":[876,484,274,48]}
+{"kind":"slide","slide":4,"id":"slide-4"}
+{"kind":"shape","slide":4,"id":"2","role":"rect","shapeType":"rect","bbox":[0,0,1280,720]}
+{"kind":"shape","slide":4,"id":"3","role":"rect","shapeType":"rect","bbox":[0,0,1280,12]}
+{"kind":"shape","slide":4,"id":"4","role":"ellipse","shapeType":"ellipse","bbox":[-92,516,260,260]}
+{"kind":"shape","slide":4,"id":"5","role":"ellipse","shapeType":"ellipse","bbox":[1078,-120,260,260]}
+{"kind":"shape","slide":4,"id":"6","role":"ellipse","shapeType":"ellipse","bbox":[94,656,5,5]}
+{"kind":"shape","slide":4,"id":"7","role":"ellipse","shapeType":"ellipse","bbox":[128,656,5,5]}
+{"kind":"shape","slide":4,"id":"8","role":"ellipse","shapeType":"ellipse","bbox":[162,656,5,5]}
+{"kind":"shape","slide":4,"id":"9","role":"ellipse","shapeType":"ellipse","bbox":[196,656,5,5]}
+{"kind":"shape","slide":4,"id":"10","role":"ellipse","shapeType":"ellipse","bbox":[230,656,5,5]}
+{"kind":"shape","slide":4,"id":"11","role":"ellipse","shapeType":"ellipse","bbox":[264,656,5,5]}
+{"kind":"shape","slide":4,"id":"12","role":"ellipse","shapeType":"ellipse","bbox":[298,656,5,5]}
+{"kind":"shape","slide":4,"id":"13","role":"ellipse","shapeType":"ellipse","bbox":[332,656,5,5]}
+{"kind":"shape","slide":4,"id":"14","role":"rect","shapeType":"rect","bbox":[64,33,88,24]}
+{"kind":"textbox","slide":4,"id":"14","role":"text","text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[64,33,88,24]}
+{"kind":"shape","slide":4,"id":"15","role":"rect","shapeType":"rect","bbox":[154,32,500,26]}
+{"kind":"textbox","slide":4,"id":"15","role":"text","text":"系统总体架构","textPreview":"系统总体架构","textChars":6,"textLines":1,"bbox":[154,32,500,26]}
+{"kind":"shape","slide":4,"id":"16","role":"rect","shapeType":"rect","bbox":[1118,32,98,24]}
+{"kind":"textbox","slide":4,"id":"16","role":"text","text":"04 / 14","textPreview":"04 / 14","textChars":7,"textLines":1,"bbox":[1118,32,98,24]}
+{"kind":"shape","slide":4,"id":"17","role":"rect","shapeType":"rect","bbox":[64,65,1152,1.5]}
+{"kind":"shape","slide":4,"id":"18","role":"rect","shapeType":"rect","bbox":[64,92,730,62]}
+{"kind":"textbox","slide":4,"id":"18","role":"text","text":"系统总体架构","textPreview":"系统总体架构","textChars":6,"textLines":1,"bbox":[64,92,730,62]}
+{"kind":"shape","slide":4,"id":"19","role":"rect","shapeType":"rect","bbox":[66,156,760,46]}
+{"kind":"textbox","slide":4,"id":"19","role":"text","text":"采用端侧采集 + 服务器编排 + 视觉 worker + 实时 AI + Web 控制台的协同架构。","textPreview":"采用端侧采集 + 服务器编排 + 视觉 worker + 实时 AI + Web 控制台的协同架构。","textChars":50,"textLines":1,"bbox":[66,156,760,46]}
+{"kind":"shape","slide":4,"id":"20","role":"roundRect","shapeType":"roundRect","bbox":[76,292,190,126]}
+{"kind":"shape","slide":4,"id":"21","role":"roundRect","shapeType":"roundRect","bbox":[310,292,170,126]}
+{"kind":"shape","slide":4,"id":"22","role":"roundRect","shapeType":"roundRect","bbox":[524,292,200,126]}
+{"kind":"shape","slide":4,"id":"23","role":"roundRect","shapeType":"roundRect","bbox":[768,292,200,126]}
+{"kind":"shape","slide":4,"id":"24","role":"roundRect","shapeType":"roundRect","bbox":[1012,292,190,126]}
+{"kind":"shape","slide":4,"id":"25","role":"rect","shapeType":"rect","bbox":[98,314,146,24]}
+{"kind":"textbox","slide":4,"id":"25","role":"text","text":"ESP32 眼镜","textPreview":"ESP32 眼镜","textChars":8,"textLines":1,"bbox":[98,314,146,24]}
+{"kind":"shape","slide":4,"id":"26","role":"rect","shapeType":"rect","bbox":[98,350,146,42]}
+{"kind":"textbox","slide":4,"id":"26","role":"text","text":"摄像头 / 麦克风\n设备端扬声器","textPreview":"摄像头 / 麦克风 | 设备端扬声器","textChars":16,"textLines":2,"bbox":[98,350,146,42]}
+{"kind":"shape","slide":4,"id":"27","role":"rect","shapeType":"rect","bbox":[330,320,130,24]}
+{"kind":"textbox","slide":4,"id":"27","role":"text","text":"UDP 8888","textPreview":"UDP 8888","textChars":8,"textLines":1,"bbox":[330,320,130,24]}
+{"kind":"shape","slide":4,"id":"28","role":"rect","shapeType":"rect","bbox":[330,358,130,34]}
+{"kind":"textbox","slide":4,"id":"28","role":"text","text":"音频、视频、播放回包","textPreview":"音频、视频、播放回包","textChars":10,"textLines":1,"bbox":[330,358,130,34]}
+{"kind":"shape","slide":4,"id":"29","role":"rect","shapeType":"rect","bbox":[548,314,152,24]}
+{"kind":"textbox","slide":4,"id":"29","role":"text","text":"Go 后端","textPreview":"Go 后端","textChars":5,"textLines":1,"bbox":[548,314,152,24]}
+{"kind":"shape","slide":4,"id":"30","role":"rect","shapeType":"rect","bbox":[548,350,152,42]}
+{"kind":"textbox","slide":4,"id":"30","role":"text","text":"HTTP / WS / UDP\n状态与流媒体编排","textPreview":"HTTP / WS / UDP | 状态与流媒体编排","textChars":24,"textLines":2,"bbox":[548,350,152,42]}
+{"kind":"shape","slide":4,"id":"31","role":"rect","shapeType":"rect","bbox":[794,314,148,24]}
+{"kind":"textbox","slide":4,"id":"31","role":"text","text":"Python Worker","textPreview":"Python Worker","textChars":13,"textLines":1,"bbox":[794,314,148,24]}
+{"kind":"shape","slide":4,"id":"32","role":"rect","shapeType":"rect","bbox":[794,350,148,42]}
+{"kind":"textbox","slide":4,"id":"32","role":"text","text":"盲道、障碍物\n斑马线、红绿灯","textPreview":"盲道、障碍物 | 斑马线、红绿灯","textChars":14,"textLines":2,"bbox":[794,350,148,42]}
+{"kind":"shape","slide":4,"id":"33","role":"rect","shapeType":"rect","bbox":[1040,314,136,24]}
+{"kind":"textbox","slide":4,"id":"33","role":"text","text":"AI / 前端","textPreview":"AI / 前端","textChars":7,"textLines":1,"bbox":[1040,314,136,24]}
+{"kind":"shape","slide":4,"id":"34","role":"rect","shapeType":"rect","bbox":[1040,350,136,42]}
+{"kind":"textbox","slide":4,"id":"34","role":"text","text":"DashScope\nVue 控制台","textPreview":"DashScope | Vue 控制台","textChars":17,"textLines":2,"bbox":[1040,350,136,42]}
+{"kind":"shape","slide":4,"id":"35","role":"flow arrow","shapeType":"rightArrow","bbox":[276,345,26,20]}
+{"kind":"shape","slide":4,"id":"36","role":"flow arrow","shapeType":"rightArrow","bbox":[490,345,26,20]}
+{"kind":"shape","slide":4,"id":"37","role":"flow arrow","shapeType":"rightArrow","bbox":[734,345,26,20]}
+{"kind":"shape","slide":4,"id":"38","role":"flow arrow","shapeType":"rightArrow","bbox":[978,345,26,20]}
+{"kind":"shape","slide":4,"id":"39","role":"roundRect","shapeType":"roundRect","bbox":[152,506,976,70]}
+{"kind":"shape","slide":4,"id":"40","role":"rect","shapeType":"rect","bbox":[188,529,120,24]}
+{"kind":"textbox","slide":4,"id":"40","role":"text","text":"核心闭环","textPreview":"核心闭环","textChars":4,"textLines":1,"bbox":[188,529,120,24]}
+{"kind":"shape","slide":4,"id":"41","role":"rect","shapeType":"rect","bbox":[320,528,746,24]}
+{"kind":"textbox","slide":4,"id":"41","role":"text","text":"采集画面/语音 → 后端组包与分发 → 模型推理/AI 问答 → 返回标注画面与中文语音提示","textPreview":"采集画面/语音 → 后端组包与分发 → 模型推理/AI 问答 → 返回标注画面与中文语音提示","textChars":46,"textLines":1,"bbox":[320,528,746,24]}
+{"kind":"slide","slide":5,"id":"slide-5"}
+{"kind":"shape","slide":5,"id":"2","role":"rect","shapeType":"rect","bbox":[0,0,1280,720]}
+{"kind":"shape","slide":5,"id":"3","role":"rect","shapeType":"rect","bbox":[0,0,1280,12]}
+{"kind":"shape","slide":5,"id":"4","role":"ellipse","shapeType":"ellipse","bbox":[-92,516,260,260]}
+{"kind":"shape","slide":5,"id":"5","role":"ellipse","shapeType":"ellipse","bbox":[1078,-120,260,260]}
+{"kind":"shape","slide":5,"id":"6","role":"ellipse","shapeType":"ellipse","bbox":[94,656,5,5]}
+{"kind":"shape","slide":5,"id":"7","role":"ellipse","shapeType":"ellipse","bbox":[128,656,5,5]}
+{"kind":"shape","slide":5,"id":"8","role":"ellipse","shapeType":"ellipse","bbox":[162,656,5,5]}
+{"kind":"shape","slide":5,"id":"9","role":"ellipse","shapeType":"ellipse","bbox":[196,656,5,5]}
+{"kind":"shape","slide":5,"id":"10","role":"ellipse","shapeType":"ellipse","bbox":[230,656,5,5]}
+{"kind":"shape","slide":5,"id":"11","role":"ellipse","shapeType":"ellipse","bbox":[264,656,5,5]}
+{"kind":"shape","slide":5,"id":"12","role":"ellipse","shapeType":"ellipse","bbox":[298,656,5,5]}
+{"kind":"shape","slide":5,"id":"13","role":"ellipse","shapeType":"ellipse","bbox":[332,656,5,5]}
+{"kind":"shape","slide":5,"id":"14","role":"rect","shapeType":"rect","bbox":[64,33,88,24]}
+{"kind":"textbox","slide":5,"id":"14","role":"text","text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[64,33,88,24]}
+{"kind":"shape","slide":5,"id":"15","role":"rect","shapeType":"rect","bbox":[154,32,500,26]}
+{"kind":"textbox","slide":5,"id":"15","role":"text","text":"硬件与通信方案","textPreview":"硬件与通信方案","textChars":7,"textLines":1,"bbox":[154,32,500,26]}
+{"kind":"shape","slide":5,"id":"16","role":"rect","shapeType":"rect","bbox":[1118,32,98,24]}
+{"kind":"textbox","slide":5,"id":"16","role":"text","text":"05 / 14","textPreview":"05 / 14","textChars":7,"textLines":1,"bbox":[1118,32,98,24]}
+{"kind":"shape","slide":5,"id":"17","role":"rect","shapeType":"rect","bbox":[64,65,1152,1.5]}
+{"kind":"shape","slide":5,"id":"18","role":"rect","shapeType":"rect","bbox":[64,92,730,62]}
+{"kind":"textbox","slide":5,"id":"18","role":"text","text":"硬件与通信方案","textPreview":"硬件与通信方案","textChars":7,"textLines":1,"bbox":[64,92,730,62]}
+{"kind":"shape","slide":5,"id":"19","role":"rect","shapeType":"rect","bbox":[66,156,760,46]}
+{"kind":"textbox","slide":5,"id":"19","role":"text","text":"端侧只承担采集、编码、上报和播放，复杂推理放在服务器侧完成。","textPreview":"端侧只承担采集、编码、上报和播放，复杂推理放在服务器侧完成。","textChars":30,"textLines":1,"bbox":[66,156,760,46]}
+{"kind":"shape","slide":5,"id":"20","role":"roundRect","shapeType":"roundRect","bbox":[82,240,470,344]}
+{"kind":"shape","slide":5,"id":"21","role":"roundRect","shapeType":"roundRect","bbox":[202,296,234,158]}
+{"kind":"shape","slide":5,"id":"22","role":"roundRect","shapeType":"roundRect","bbox":[222,324,194,106]}
+{"kind":"shape","slide":5,"id":"23","role":"ellipse","shapeType":"ellipse","bbox":[291,347,56,56]}
+{"kind":"shape","slide":5,"id":"24","role":"ellipse","shapeType":"ellipse","bbox":[306,362,26,26]}
+{"kind":"shape","slide":5,"id":"25","role":"ellipse","shapeType":"ellipse","bbox":[222,426,18,18]}
+{"kind":"shape","slide":5,"id":"26","role":"ellipse","shapeType":"ellipse","bbox":[398,426,18,18]}
+{"kind":"shape","slide":5,"id":"27","role":"rect","shapeType":"rect","bbox":[291,413,56,16]}
+{"kind":"textbox","slide":5,"id":"27","role":"text","text":"CAM","textPreview":"CAM","textChars":3,"textLines":1,"bbox":[291,413,56,16]}
+{"kind":"shape","slide":5,"id":"28","role":"rect","shapeType":"rect","bbox":[142,506,350,28]}
+{"kind":"textbox","slide":5,"id":"28","role":"text","text":"XIAO ESP32S3 Sense 原型","textPreview":"XIAO ESP32S3 Sense 原型","textChars":21,"textLines":1,"bbox":[142,506,350,28]}
+{"kind":"shape","slide":5,"id":"29","role":"rect","shapeType":"rect","bbox":[150,542,334,58]}
+{"kind":"textbox","slide":5,"id":"29","role":"text","text":"Camera：第一视角画面\nPDM Mic：语音输入\nI2S Speaker：导航/AI 音频播放","textPreview":"Camera：第一视角画面 | PDM Mic：语音输入 | I2S Speaker：导航/AI 音频播放","textChars":49,"textLines":3,"bbox":[150,542,334,58]}
+{"kind":"shape","slide":5,"id":"30","role":"rect","shapeType":"rect","bbox":[650,220,260,28]}
+{"kind":"textbox","slide":5,"id":"30","role":"text","text":"通信包类型","textPreview":"通信包类型","textChars":5,"textLines":1,"bbox":[650,220,260,28]}
+{"kind":"shape","slide":5,"id":"31","role":"roundRect","shapeType":"roundRect","bbox":[650,270,500,52]}
+{"kind":"shape","slide":5,"id":"32","role":"rect","shapeType":"rect","bbox":[650,270,6,52]}
+{"kind":"shape","slide":5,"id":"33","role":"rect","shapeType":"rect","bbox":[670,283,105,22]}
+{"kind":"textbox","slide":5,"id":"33","role":"text","text":"hello","textPreview":"hello","textChars":5,"textLines":1,"bbox":[670,283,105,22]}
+{"kind":"shape","slide":5,"id":"34","role":"rect","shapeType":"rect","bbox":[790,284,98,20]}
+{"kind":"textbox","slide":5,"id":"34","role":"text","text":"设备 → 后端","textPreview":"设备 → 后端","textChars":7,"textLines":1,"bbox":[790,284,98,20]}
+{"kind":"shape","slide":5,"id":"35","role":"rect","shapeType":"rect","bbox":[910,282,220,24]}
+{"kind":"textbox","slide":5,"id":"35","role":"text","text":"token、设备能力、扬声器状态","textPreview":"token、设备能力、扬声器状态","textChars":16,"textLines":1,"bbox":[910,282,220,24]}
+{"kind":"shape","slide":5,"id":"36","role":"roundRect","shapeType":"roundRect","bbox":[650,336,500,52]}
+{"kind":"shape","slide":5,"id":"37","role":"rect","shapeType":"rect","bbox":[650,336,6,52]}
+{"kind":"shape","slide":5,"id":"38","role":"rect","shapeType":"rect","bbox":[670,349,105,22]}
+{"kind":"textbox","slide":5,"id":"38","role":"text","text":"video","textPreview":"video","textChars":5,"textLines":1,"bbox":[670,349,105,22]}
+{"kind":"shape","slide":5,"id":"39","role":"rect","shapeType":"rect","bbox":[790,350,98,20]}
+{"kind":"textbox","slide":5,"id":"39","role":"text","text":"设备 → 后端","textPreview":"设备 → 后端","textChars":7,"textLines":1,"bbox":[790,350,98,20]}
+{"kind":"shape","slide":5,"id":"40","role":"rect","shapeType":"rect","bbox":[910,348,220,24]}
+{"kind":"textbox","slide":5,"id":"40","role":"text","text":"JPEG 分片、帧序号、时间戳","textPreview":"JPEG 分片、帧序号、时间戳","textChars":15,"textLines":1,"bbox":[910,348,220,24]}
+{"kind":"shape","slide":5,"id":"41","role":"roundRect","shapeType":"roundRect","bbox":[650,402,500,52]}
+{"kind":"shape","slide":5,"id":"42","role":"rect","shapeType":"rect","bbox":[650,402,6,52]}
+{"kind":"shape","slide":5,"id":"43","role":"rect","shapeType":"rect","bbox":[670,415,105,22]}
+{"kind":"textbox","slide":5,"id":"43","role":"text","text":"audio","textPreview":"audio","textChars":5,"textLines":1,"bbox":[670,415,105,22]}
+{"kind":"shape","slide":5,"id":"44","role":"rect","shapeType":"rect","bbox":[790,416,98,20]}
+{"kind":"textbox","slide":5,"id":"44","role":"text","text":"设备 → 后端","textPreview":"设备 → 后端","textChars":7,"textLines":1,"bbox":[790,416,98,20]}
+{"kind":"shape","slide":5,"id":"45","role":"rect","shapeType":"rect","bbox":[910,414,220,24]}
+{"kind":"textbox","slide":5,"id":"45","role":"text","text":"PCM16 音频分片、序列号","textPreview":"PCM16 音频分片、序列号","textChars":14,"textLines":1,"bbox":[910,414,220,24]}
+{"kind":"shape","slide":5,"id":"46","role":"roundRect","shapeType":"roundRect","bbox":[650,468,500,52]}
+{"kind":"shape","slide":5,"id":"47","role":"rect","shapeType":"rect","bbox":[650,468,6,52]}
+{"kind":"shape","slide":5,"id":"48","role":"rect","shapeType":"rect","bbox":[670,481,105,22]}
+{"kind":"textbox","slide":5,"id":"48","role":"text","text":"ai_audio","textPreview":"ai_audio","textChars":8,"textLines":1,"bbox":[670,481,105,22]}
+{"kind":"shape","slide":5,"id":"49","role":"rect","shapeType":"rect","bbox":[790,482,98,20]}
+{"kind":"textbox","slide":5,"id":"49","role":"text","text":"后端 → 设备","textPreview":"后端 → 设备","textChars":7,"textLines":1,"bbox":[790,482,98,20]}
+{"kind":"shape","slide":5,"id":"50","role":"rect","shapeType":"rect","bbox":[910,480,220,24]}
+{"kind":"textbox","slide":5,"id":"50","role":"text","text":"导航 wav / AI PCM 回放","textPreview":"导航 wav / AI PCM 回放","textChars":18,"textLines":1,"bbox":[910,480,220,24]}
+{"kind":"shape","slide":5,"id":"51","role":"roundRect","shapeType":"roundRect","bbox":[650,534,500,52]}
+{"kind":"shape","slide":5,"id":"52","role":"rect","shapeType":"rect","bbox":[650,534,6,52]}
+{"kind":"shape","slide":5,"id":"53","role":"rect","shapeType":"rect","bbox":[670,547,105,22]}
+{"kind":"textbox","slide":5,"id":"53","role":"text","text":"control","textPreview":"control","textChars":7,"textLines":1,"bbox":[670,547,105,22]}
+{"kind":"shape","slide":5,"id":"54","role":"rect","shapeType":"rect","bbox":[790,548,98,20]}
+{"kind":"textbox","slide":5,"id":"54","role":"text","text":"前端 → 后端","textPreview":"前端 → 后端","textChars":7,"textLines":1,"bbox":[790,548,98,20]}
+{"kind":"shape","slide":5,"id":"55","role":"rect","shapeType":"rect","bbox":[910,546,220,24]}
+{"kind":"textbox","slide":5,"id":"55","role":"text","text":"模式切换、视觉 worker 指令","textPreview":"模式切换、视觉 worker 指令","textChars":17,"textLines":1,"bbox":[910,546,220,24]}
+{"kind":"slide","slide":6,"id":"slide-6"}
+{"kind":"shape","slide":6,"id":"2","role":"rect","shapeType":"rect","bbox":[0,0,1280,720]}
+{"kind":"shape","slide":6,"id":"3","role":"rect","shapeType":"rect","bbox":[0,0,1280,12]}
+{"kind":"shape","slide":6,"id":"4","role":"ellipse","shapeType":"ellipse","bbox":[-92,516,260,260]}
+{"kind":"shape","slide":6,"id":"5","role":"ellipse","shapeType":"ellipse","bbox":[1078,-120,260,260]}
+{"kind":"shape","slide":6,"id":"6","role":"ellipse","shapeType":"ellipse","bbox":[94,656,5,5]}
+{"kind":"shape","slide":6,"id":"7","role":"ellipse","shapeType":"ellipse","bbox":[128,656,5,5]}
+{"kind":"shape","slide":6,"id":"8","role":"ellipse","shapeType":"ellipse","bbox":[162,656,5,5]}
+{"kind":"shape","slide":6,"id":"9","role":"ellipse","shapeType":"ellipse","bbox":[196,656,5,5]}
+{"kind":"shape","slide":6,"id":"10","role":"ellipse","shapeType":"ellipse","bbox":[230,656,5,5]}
+{"kind":"shape","slide":6,"id":"11","role":"ellipse","shapeType":"ellipse","bbox":[264,656,5,5]}
+{"kind":"shape","slide":6,"id":"12","role":"ellipse","shapeType":"ellipse","bbox":[298,656,5,5]}
+{"kind":"shape","slide":6,"id":"13","role":"ellipse","shapeType":"ellipse","bbox":[332,656,5,5]}
+{"kind":"shape","slide":6,"id":"14","role":"rect","shapeType":"rect","bbox":[64,33,88,24]}
+{"kind":"textbox","slide":6,"id":"14","role":"text","text":"05","textPreview":"05","textChars":2,"textLines":1,"bbox":[64,33,88,24]}
+{"kind":"shape","slide":6,"id":"15","role":"rect","shapeType":"rect","bbox":[154,32,500,26]}
+{"kind":"textbox","slide":6,"id":"15","role":"text","text":"软件模块划分","textPreview":"软件模块划分","textChars":6,"textLines":1,"bbox":[154,32,500,26]}
+{"kind":"shape","slide":6,"id":"16","role":"rect","shapeType":"rect","bbox":[1118,32,98,24]}
+{"kind":"textbox","slide":6,"id":"16","role":"text","text":"06 / 14","textPreview":"06 / 14","textChars":7,"textLines":1,"bbox":[1118,32,98,24]}
+{"kind":"shape","slide":6,"id":"17","role":"rect","shapeType":"rect","bbox":[64,65,1152,1.5]}
+{"kind":"shape","slide":6,"id":"18","role":"rect","shapeType":"rect","bbox":[64,92,730,62]}
+{"kind":"textbox","slide":6,"id":"18","role":"text","text":"软件模块划分","textPreview":"软件模块划分","textChars":6,"textLines":1,"bbox":[64,92,730,62]}
+{"kind":"shape","slide":6,"id":"19","role":"rect","shapeType":"rect","bbox":[66,156,760,46]}
+{"kind":"textbox","slide":6,"id":"19","role":"text","text":"项目按职责分为固件、Go 后端、Python 视觉 worker、Vue 前端和部署资产。","textPreview":"项目按职责分为固件、Go 后端、Python 视觉 worker、Vue 前端和部署资产。","textChars":45,"textLines":1,"bbox":[66,156,760,46]}
+{"kind":"shape","slide":6,"id":"20","role":"roundRect","shapeType":"roundRect","bbox":[78,238,340,146]}
+{"kind":"shape","slide":6,"id":"21","role":"rect","shapeType":"rect","bbox":[78,238,7,146]}
+{"kind":"shape","slide":6,"id":"22","role":"rect","shapeType":"rect","bbox":[104,261,288,30]}
+{"kind":"textbox","slide":6,"id":"22","role":"text","text":"固件层","textPreview":"固件层","textChars":3,"textLines":1,"bbox":[104,261,288,30]}
+{"kind":"shape","slide":6,"id":"23","role":"rect","shapeType":"rect","bbox":[104,306,288,62]}
+{"kind":"textbox","slide":6,"id":"23","role":"text","text":"firmware/xiao_sense_ws_stream\n网络、队列、摄像头、麦克风、扬声器播放","textPreview":"firmware/xiao_sense_ws_stream | 网络、队列、摄像头、麦克风、扬声器播放","textChars":49,"textLines":2,"bbox":[104,306,288,62]}
+{"kind":"shape","slide":6,"id":"24","role":"roundRect","shapeType":"roundRect","bbox":[468,238,340,146]}
+{"kind":"shape","slide":6,"id":"25","role":"rect","shapeType":"rect","bbox":[468,238,7,146]}
+{"kind":"shape","slide":6,"id":"26","role":"rect","shapeType":"rect","bbox":[494,261,288,30]}
+{"kind":"textbox","slide":6,"id":"26","role":"text","text":"后端层","textPreview":"后端层","textChars":3,"textLines":1,"bbox":[494,261,288,30]}
+{"kind":"shape","slide":6,"id":"27","role":"rect","shapeType":"rect","bbox":[494,306,288,62]}
+{"kind":"textbox","slide":6,"id":"27","role":"text","text":"server/internal/serverapp\nUDP ingest、WebSocket、DashScope、worker bridge","textPreview":"server/internal/serverapp | UDP ingest、WebSocket、DashScope、worker bridge","textChars":70,"textLines":2,"bbox":[494,306,288,62]}
+{"kind":"shape","slide":6,"id":"28","role":"roundRect","shapeType":"roundRect","bbox":[858,238,340,146]}
+{"kind":"shape","slide":6,"id":"29","role":"rect","shapeType":"rect","bbox":[858,238,7,146]}
+{"kind":"shape","slide":6,"id":"30","role":"rect","shapeType":"rect","bbox":[884,261,288,30]}
+{"kind":"textbox","slide":6,"id":"30","role":"text","text":"视觉层","textPreview":"视觉层","textChars":3,"textLines":1,"bbox":[884,261,288,30]}
+{"kind":"shape","slide":6,"id":"31","role":"rect","shapeType":"rect","bbox":[884,306,288,62]}
+{"kind":"textbox","slide":6,"id":"31","role":"text","text":"python_worker\n导盲、过街、红绿灯、寻物、语音命令处理","textPreview":"python_worker | 导盲、过街、红绿灯、寻物、语音命令处理","textChars":33,"textLines":2,"bbox":[884,306,288,62]}
+{"kind":"shape","slide":6,"id":"32","role":"roundRect","shapeType":"roundRect","bbox":[238,440,380,146]}
+{"kind":"shape","slide":6,"id":"33","role":"rect","shapeType":"rect","bbox":[238,440,7,146]}
+{"kind":"shape","slide":6,"id":"34","role":"rect","shapeType":"rect","bbox":[264,463,328,30]}
+{"kind":"textbox","slide":6,"id":"34","role":"text","text":"前端层","textPreview":"前端层","textChars":3,"textLines":1,"bbox":[264,463,328,30]}
+{"kind":"shape","slide":6,"id":"35","role":"rect","shapeType":"rect","bbox":[264,508,328,62]}
+{"kind":"textbox","slide":6,"id":"35","role":"text","text":"esp32-glass-front/src\n实时画面、模式切换、音频播放、状态面板","textPreview":"esp32-glass-front/src | 实时画面、模式切换、音频播放、状态面板","textChars":41,"textLines":2,"bbox":[264,508,328,62]}
+{"kind":"shape","slide":6,"id":"36","role":"roundRect","shapeType":"roundRect","bbox":[658,440,380,146]}
+{"kind":"shape","slide":6,"id":"37","role":"rect","shapeType":"rect","bbox":[658,440,7,146]}
+{"kind":"shape","slide":6,"id":"38","role":"rect","shapeType":"rect","bbox":[684,463,328,30]}
+{"kind":"textbox","slide":6,"id":"38","role":"text","text":"部署资产","textPreview":"部署资产","textChars":4,"textLines":1,"bbox":[684,463,328,30]}
+{"kind":"shape","slide":6,"id":"39","role":"rect","shapeType":"rect","bbox":[684,508,328,62]}
+{"kind":"textbox","slide":6,"id":"39","role":"text","text":"LINUX_DEPLOY / SERVER_DEPLOY\n模型文件、脚本、Nginx、systemd、验收命令","textPreview":"LINUX_DEPLOY / SERVER_DEPLOY | 模型文件、脚本、Nginx、systemd、验收命令","textChars":55,"textLines":2,"bbox":[684,508,328,62]}
+{"kind":"shape","slide":6,"id":"40","role":"roundRect","shapeType":"roundRect","bbox":[994,102,190,96]}
+{"kind":"shape","slide":6,"id":"41","role":"rect","shapeType":"rect","bbox":[994,102,190,7]}
+{"kind":"shape","slide":6,"id":"42","role":"rect","shapeType":"rect","bbox":[1012,126,154,46]}
+{"kind":"textbox","slide":6,"id":"42","role":"text","text":"62","textPreview":"62","textChars":2,"textLines":1,"bbox":[1012,126,154,46]}
+{"kind":"shape","slide":6,"id":"43","role":"rect","shapeType":"rect","bbox":[1014,180,150,36]}
+{"kind":"textbox","slide":6,"id":"43","role":"text","text":"主要源码文件","textPreview":"主要源码文件","textChars":6,"textLines":1,"bbox":[1014,180,150,36]}
+{"kind":"shape","slide":6,"id":"44","role":"rect","shapeType":"rect","bbox":[1014,166,150,18]}
+{"kind":"textbox","slide":6,"id":"44","role":"text","text":"不含 dist / node_modules","textPreview":"不含 dist / node_modules","textChars":22,"textLines":1,"bbox":[1014,166,150,18]}
+{"kind":"shape","slide":6,"id":"45","role":"roundRect","shapeType":"roundRect","bbox":[994,212,190,96]}
+{"kind":"shape","slide":6,"id":"46","role":"rect","shapeType":"rect","bbox":[994,212,190,7]}
+{"kind":"shape","slide":6,"id":"47","role":"rect","shapeType":"rect","bbox":[1012,236,154,46]}
+{"kind":"textbox","slide":6,"id":"47","role":"text","text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[1012,236,154,46]}
+{"kind":"shape","slide":6,"id":"48","role":"rect","shapeType":"rect","bbox":[1014,290,150,36]}
+{"kind":"textbox","slide":6,"id":"48","role":"text","text":"运行服务入口","textPreview":"运行服务入口","textChars":6,"textLines":1,"bbox":[1014,290,150,36]}
+{"kind":"shape","slide":6,"id":"49","role":"rect","shapeType":"rect","bbox":[1014,276,150,18]}
+{"kind":"textbox","slide":6,"id":"49","role":"text","text":"ESP32 / Go / Worker","textPreview":"ESP32 / Go / Worker","textChars":19,"textLines":1,"bbox":[1014,276,150,18]}
+{"kind":"slide","slide":7,"id":"slide-7"}
+{"kind":"shape","slide":7,"id":"2","role":"rect","shapeType":"rect","bbox":[0,0,1280,720]}
+{"kind":"shape","slide":7,"id":"3","role":"rect","shapeType":"rect","bbox":[0,0,1280,12]}
+{"kind":"shape","slide":7,"id":"4","role":"ellipse","shapeType":"ellipse","bbox":[-92,516,260,260]}
+{"kind":"shape","slide":7,"id":"5","role":"ellipse","shapeType":"ellipse","bbox":[1078,-120,260,260]}
+{"kind":"shape","slide":7,"id":"6","role":"ellipse","shapeType":"ellipse","bbox":[94,656,5,5]}
+{"kind":"shape","slide":7,"id":"7","role":"ellipse","shapeType":"ellipse","bbox":[128,656,5,5]}
+{"kind":"shape","slide":7,"id":"8","role":"ellipse","shapeType":"ellipse","bbox":[162,656,5,5]}
+{"kind":"shape","slide":7,"id":"9","role":"ellipse","shapeType":"ellipse","bbox":[196,656,5,5]}
+{"kind":"shape","slide":7,"id":"10","role":"ellipse","shapeType":"ellipse","bbox":[230,656,5,5]}
+{"kind":"shape","slide":7,"id":"11","role":"ellipse","shapeType":"ellipse","bbox":[264,656,5,5]}
+{"kind":"shape","slide":7,"id":"12","role":"ellipse","shapeType":"ellipse","bbox":[298,656,5,5]}
+{"kind":"shape","slide":7,"id":"13","role":"ellipse","shapeType":"ellipse","bbox":[332,656,5,5]}
+{"kind":"shape","slide":7,"id":"14","role":"rect","shapeType":"rect","bbox":[64,33,88,24]}
+{"kind":"textbox","slide":7,"id":"14","role":"text","text":"06","textPreview":"06","textChars":2,"textLines":1,"bbox":[64,33,88,24]}
+{"kind":"shape","slide":7,"id":"15","role":"rect","shapeType":"rect","bbox":[154,32,500,26]}
+{"kind":"textbox","slide":7,"id":"15","role":"text","text":"导盲路径算法","textPreview":"导盲路径算法","textChars":6,"textLines":1,"bbox":[154,32,500,26]}
+{"kind":"shape","slide":7,"id":"16","role":"rect","shapeType":"rect","bbox":[1118,32,98,24]}
+{"kind":"textbox","slide":7,"id":"16","role":"text","text":"07 / 14","textPreview":"07 / 14","textChars":7,"textLines":1,"bbox":[1118,32,98,24]}
+{"kind":"shape","slide":7,"id":"17","role":"rect","shapeType":"rect","bbox":[64,65,1152,1.5]}
+{"kind":"shape","slide":7,"id":"18","role":"rect","shapeType":"rect","bbox":[64,92,730,62]}
+{"kind":"textbox","slide":7,"id":"18","role":"text","text":"导盲路径算法","textPreview":"导盲路径算法","textChars":6,"textLines":1,"bbox":[64,92,730,62]}
+{"kind":"shape","slide":7,"id":"19","role":"rect","shapeType":"rect","bbox":[66,156,760,46]}
+{"kind":"textbox","slide":7,"id":"19","role":"text","text":"视觉 worker 将设备画面旋转校正后，提取盲道区域、计算偏移并叠加障碍物判断。","textPreview":"视觉 worker 将设备画面旋转校正后，提取盲道区域、计算偏移并叠加障碍物判断。","textChars":41,"textLines":1,"bbox":[66,156,760,46]}
+{"kind":"shape","slide":7,"id":"20","role":"roundRect","shapeType":"roundRect","bbox":[80,235,470,350]}
+{"kind":"shape","slide":7,"id":"21","role":"trapezoid","shapeType":"trapezoid","bbox":[194,300,244,238]}
+{"kind":"shape","slide":7,"id":"22","role":"trapezoid","shapeType":"trapezoid","bbox":[222,318,188,202]}
+{"kind":"shape","slide":7,"id":"23","role":"rect","shapeType":"rect","bbox":[316,326,12,184]}
+{"kind":"shape","slide":7,"id":"24","role":"ellipse","shapeType":"ellipse","bbox":[372,370,46,46]}
+{"kind":"shape","slide":7,"id":"25","role":"rect","shapeType":"rect","bbox":[108,254,160,22]}
+{"kind":"textbox","slide":7,"id":"25","role":"text","text":"视觉标注示意","textPreview":"视觉标注示意","textChars":6,"textLines":1,"bbox":[108,254,160,22]}
+{"kind":"shape","slide":7,"id":"26","role":"rect","shapeType":"rect","bbox":[108,486,160,58]}
+{"kind":"textbox","slide":7,"id":"26","role":"text","text":"偏移：右侧\n障碍：前方\n提示：向左调整","textPreview":"偏移：右侧 | 障碍：前方 | 提示：向左调整","textChars":19,"textLines":3,"bbox":[108,486,160,58]}
+{"kind":"shape","slide":7,"id":"27","role":"roundRect","shapeType":"roundRect","bbox":[610,238,520,74]}
+{"kind":"shape","slide":7,"id":"28","role":"rect","shapeType":"rect","bbox":[610,238,7,74]}
+{"kind":"shape","slide":7,"id":"29","role":"ellipse","shapeType":"ellipse","bbox":[632,259,40,40]}
+{"kind":"shape","slide":7,"id":"30","role":"rect","shapeType":"rect","bbox":[632,270,40,14]}
+{"kind":"textbox","slide":7,"id":"30","role":"text","text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[632,270,40,14]}
+{"kind":"shape","slide":7,"id":"31","role":"rect","shapeType":"rect","bbox":[688,255,416,24]}
+{"kind":"textbox","slide":7,"id":"31","role":"text","text":"方向校正","textPreview":"方向校正","textChars":4,"textLines":1,"bbox":[688,255,416,24]}
+{"kind":"shape","slide":7,"id":"32","role":"rect","shapeType":"rect","bbox":[688,286,416,20]}
+{"kind":"textbox","slide":7,"id":"32","role":"text","text":"VISION_INPUT_ROTATION 将第一视角画面统一到模型输入方向。","textPreview":"VISION_INPUT_ROTATION 将第一视角画面统一到模型输入方向。","textChars":39,"textLines":1,"bbox":[688,286,416,20]}
+{"kind":"shape","slide":7,"id":"33","role":"roundRect","shapeType":"roundRect","bbox":[610,324,520,74]}
+{"kind":"shape","slide":7,"id":"34","role":"rect","shapeType":"rect","bbox":[610,324,7,74]}
+{"kind":"shape","slide":7,"id":"35","role":"ellipse","shapeType":"ellipse","bbox":[632,345,40,40]}
+{"kind":"shape","slide":7,"id":"36","role":"rect","shapeType":"rect","bbox":[632,356,40,14]}
+{"kind":"textbox","slide":7,"id":"36","role":"text","text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[632,356,40,14]}
+{"kind":"shape","slide":7,"id":"37","role":"rect","shapeType":"rect","bbox":[688,341,416,24]}
+{"kind":"textbox","slide":7,"id":"37","role":"text","text":"盲道分割","textPreview":"盲道分割","textChars":4,"textLines":1,"bbox":[688,341,416,24]}
+{"kind":"shape","slide":7,"id":"38","role":"rect","shapeType":"rect","bbox":[688,372,416,20]}
+{"kind":"textbox","slide":7,"id":"38","role":"text","text":"YOLO 分割模型输出盲道 mask，提取中心线与可通行区域。","textPreview":"YOLO 分割模型输出盲道 mask，提取中心线与可通行区域。","textChars":31,"textLines":1,"bbox":[688,372,416,20]}
+{"kind":"shape","slide":7,"id":"39","role":"roundRect","shapeType":"roundRect","bbox":[610,410,520,74]}
+{"kind":"shape","slide":7,"id":"40","role":"rect","shapeType":"rect","bbox":[610,410,7,74]}
+{"kind":"shape","slide":7,"id":"41","role":"ellipse","shapeType":"ellipse","bbox":[632,431,40,40]}
+{"kind":"shape","slide":7,"id":"42","role":"rect","shapeType":"rect","bbox":[632,442,40,14]}
+{"kind":"textbox","slide":7,"id":"42","role":"text","text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[632,442,40,14]}
+{"kind":"shape","slide":7,"id":"43","role":"rect","shapeType":"rect","bbox":[688,427,416,24]}
+{"kind":"textbox","slide":7,"id":"43","role":"text","text":"偏移估计","textPreview":"偏移估计","textChars":4,"textLines":1,"bbox":[688,427,416,24]}
+{"kind":"shape","slide":7,"id":"44","role":"rect","shapeType":"rect","bbox":[688,458,416,20]}
+{"kind":"textbox","slide":7,"id":"44","role":"text","text":"根据画面中心与盲道中心差值，生成左/右/直行提示。","textPreview":"根据画面中心与盲道中心差值，生成左/右/直行提示。","textChars":25,"textLines":1,"bbox":[688,458,416,20]}
+{"kind":"shape","slide":7,"id":"45","role":"roundRect","shapeType":"roundRect","bbox":[610,496,520,74]}
+{"kind":"shape","slide":7,"id":"46","role":"rect","shapeType":"rect","bbox":[610,496,7,74]}
+{"kind":"shape","slide":7,"id":"47","role":"ellipse","shapeType":"ellipse","bbox":[632,517,40,40]}
+{"kind":"shape","slide":7,"id":"48","role":"rect","shapeType":"rect","bbox":[632,528,40,14]}
+{"kind":"textbox","slide":7,"id":"48","role":"text","text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[632,528,40,14]}
+{"kind":"shape","slide":7,"id":"49","role":"rect","shapeType":"rect","bbox":[688,513,416,24]}
+{"kind":"textbox","slide":7,"id":"49","role":"text","text":"障碍融合","textPreview":"障碍融合","textChars":4,"textLines":1,"bbox":[688,513,416,24]}
+{"kind":"shape","slide":7,"id":"50","role":"rect","shapeType":"rect","bbox":[688,544,416,20]}
+{"kind":"textbox","slide":7,"id":"50","role":"text","text":"YOLOE 文本提示检测人、车、柱子等障碍物，提升安全提示。","textPreview":"YOLOE 文本提示检测人、车、柱子等障碍物，提升安全提示。","textChars":30,"textLines":1,"bbox":[688,544,416,20]}
+{"kind":"slide","slide":8,"id":"slide-8"}
+{"kind":"shape","slide":8,"id":"2","role":"rect","shapeType":"rect","bbox":[0,0,1280,720]}
+{"kind":"shape","slide":8,"id":"3","role":"rect","shapeType":"rect","bbox":[0,0,1280,12]}
+{"kind":"shape","slide":8,"id":"4","role":"ellipse","shapeType":"ellipse","bbox":[-92,516,260,260]}
+{"kind":"shape","slide":8,"id":"5","role":"ellipse","shapeType":"ellipse","bbox":[1078,-120,260,260]}
+{"kind":"shape","slide":8,"id":"6","role":"ellipse","shapeType":"ellipse","bbox":[94,656,5,5]}
+{"kind":"shape","slide":8,"id":"7","role":"ellipse","shapeType":"ellipse","bbox":[128,656,5,5]}
+{"kind":"shape","slide":8,"id":"8","role":"ellipse","shapeType":"ellipse","bbox":[162,656,5,5]}
+{"kind":"shape","slide":8,"id":"9","role":"ellipse","shapeType":"ellipse","bbox":[196,656,5,5]}
+{"kind":"shape","slide":8,"id":"10","role":"ellipse","shapeType":"ellipse","bbox":[230,656,5,5]}
+{"kind":"shape","slide":8,"id":"11","role":"ellipse","shapeType":"ellipse","bbox":[264,656,5,5]}
+{"kind":"shape","slide":8,"id":"12","role":"ellipse","shapeType":"ellipse","bbox":[298,656,5,5]}
+{"kind":"shape","slide":8,"id":"13","role":"ellipse","shapeType":"ellipse","bbox":[332,656,5,5]}
+{"kind":"shape","slide":8,"id":"14","role":"rect","shapeType":"rect","bbox":[64,33,88,24]}
+{"kind":"textbox","slide":8,"id":"14","role":"text","text":"07","textPreview":"07","textChars":2,"textLines":1,"bbox":[64,33,88,24]}
+{"kind":"shape","slide":8,"id":"15","role":"rect","shapeType":"rect","bbox":[154,32,500,26]}
+{"kind":"textbox","slide":8,"id":"15","role":"text","text":"过街与红绿灯流程","textPreview":"过街与红绿灯流程","textChars":8,"textLines":1,"bbox":[154,32,500,26]}
+{"kind":"shape","slide":8,"id":"16","role":"rect","shapeType":"rect","bbox":[1118,32,98,24]}
+{"kind":"textbox","slide":8,"id":"16","role":"text","text":"08 / 14","textPreview":"08 / 14","textChars":7,"textLines":1,"bbox":[1118,32,98,24]}
+{"kind":"shape","slide":8,"id":"17","role":"rect","shapeType":"rect","bbox":[64,65,1152,1.5]}
+{"kind":"shape","slide":8,"id":"18","role":"rect","shapeType":"rect","bbox":[64,92,730,62]}
+{"kind":"textbox","slide":8,"id":"18","role":"text","text":"过街与红绿灯流程","textPreview":"过街与红绿灯流程","textChars":8,"textLines":1,"bbox":[64,92,730,62]}
+{"kind":"shape","slide":8,"id":"19","role":"rect","shapeType":"rect","bbox":[66,156,760,46]}
+{"kind":"textbox","slide":8,"id":"19","role":"text","text":"过街模式不是单帧识别，而是围绕斑马线位置、角度、红绿灯和结束条件的状态流程。","textPreview":"过街模式不是单帧识别，而是围绕斑马线位置、角度、红绿灯和结束条件的状态流程。","textChars":38,"textLines":1,"bbox":[66,156,760,46]}
+{"kind":"shape","slide":8,"id":"20","role":"roundRect","shapeType":"roundRect","bbox":[88,300,170,94]}
+{"kind":"shape","slide":8,"id":"21","role":"roundRect","shapeType":"roundRect","bbox":[302,300,170,94]}
+{"kind":"shape","slide":8,"id":"22","role":"roundRect","shapeType":"roundRect","bbox":[516,300,170,94]}
+{"kind":"shape","slide":8,"id":"23","role":"roundRect","shapeType":"roundRect","bbox":[730,300,170,94]}
+{"kind":"shape","slide":8,"id":"24","role":"roundRect","shapeType":"roundRect","bbox":[944,300,170,94]}
+{"kind":"shape","slide":8,"id":"25","role":"rect","shapeType":"rect","bbox":[106,318,134,22]}
+{"kind":"textbox","slide":8,"id":"25","role":"text","text":"导盲巡航","textPreview":"导盲巡航","textChars":4,"textLines":1,"bbox":[106,318,134,22]}
+{"kind":"shape","slide":8,"id":"26","role":"rect","shapeType":"rect","bbox":[106,352,134,20]}
+{"kind":"textbox","slide":8,"id":"26","role":"text","text":"盲道跟随","textPreview":"盲道跟随","textChars":4,"textLines":1,"bbox":[106,352,134,20]}
+{"kind":"shape","slide":8,"id":"27","role":"rect","shapeType":"rect","bbox":[320,318,134,22]}
+{"kind":"textbox","slide":8,"id":"27","role":"text","text":"进入过街","textPreview":"进入过街","textChars":4,"textLines":1,"bbox":[320,318,134,22]}
+{"kind":"shape","slide":8,"id":"28","role":"rect","shapeType":"rect","bbox":[320,352,134,20]}
+{"kind":"textbox","slide":8,"id":"28","role":"text","text":"语音/前端命令","textPreview":"语音/前端命令","textChars":7,"textLines":1,"bbox":[320,352,134,20]}
+{"kind":"shape","slide":8,"id":"29","role":"rect","shapeType":"rect","bbox":[534,318,134,22]}
+{"kind":"textbox","slide":8,"id":"29","role":"text","text":"斑马线对齐","textPreview":"斑马线对齐","textChars":5,"textLines":1,"bbox":[534,318,134,22]}
+{"kind":"shape","slide":8,"id":"30","role":"rect","shapeType":"rect","bbox":[534,352,134,20]}
+{"kind":"textbox","slide":8,"id":"30","role":"text","text":"角度与偏移","textPreview":"角度与偏移","textChars":5,"textLines":1,"bbox":[534,352,134,20]}
+{"kind":"shape","slide":8,"id":"31","role":"rect","shapeType":"rect","bbox":[748,318,134,22]}
+{"kind":"textbox","slide":8,"id":"31","role":"text","text":"红绿灯判断","textPreview":"红绿灯判断","textChars":5,"textLines":1,"bbox":[748,318,134,22]}
+{"kind":"shape","slide":8,"id":"32","role":"rect","shapeType":"rect","bbox":[748,352,134,20]}
+{"kind":"textbox","slide":8,"id":"32","role":"text","text":"绿灯/倒计时","textPreview":"绿灯/倒计时","textChars":6,"textLines":1,"bbox":[748,352,134,20]}
+{"kind":"shape","slide":8,"id":"33","role":"rect","shapeType":"rect","bbox":[962,318,134,22]}
+{"kind":"textbox","slide":8,"id":"33","role":"text","text":"完成返回","textPreview":"完成返回","textChars":4,"textLines":1,"bbox":[962,318,134,22]}
+{"kind":"shape","slide":8,"id":"34","role":"rect","shapeType":"rect","bbox":[962,352,134,20]}
+{"kind":"textbox","slide":8,"id":"34","role":"text","text":"继续导盲","textPreview":"继续导盲","textChars":4,"textLines":1,"bbox":[962,352,134,20]}
+{"kind":"shape","slide":8,"id":"35","role":"flow arrow","shapeType":"rightArrow","bbox":[268,337,26,20]}
+{"kind":"shape","slide":8,"id":"36","role":"flow arrow","shapeType":"rightArrow","bbox":[482,337,26,20]}
+{"kind":"shape","slide":8,"id":"37","role":"flow arrow","shapeType":"rightArrow","bbox":[696,337,26,20]}
+{"kind":"shape","slide":8,"id":"38","role":"flow arrow","shapeType":"rightArrow","bbox":[910,337,26,20]}
+{"kind":"shape","slide":8,"id":"39","role":"roundRect","shapeType":"roundRect","bbox":[136,486,430,102]}
+{"kind":"shape","slide":8,"id":"40","role":"rect","shapeType":"rect","bbox":[180,518,34,44]}
+{"kind":"shape","slide":8,"id":"41","role":"rect","shapeType":"rect","bbox":[232,518,34,44]}
+{"kind":"shape","slide":8,"id":"42","role":"rect","shapeType":"rect","bbox":[284,518,34,44]}
+{"kind":"shape","slide":8,"id":"43","role":"rect","shapeType":"rect","bbox":[336,518,34,44]}
+{"kind":"shape","slide":8,"id":"44","role":"rect","shapeType":"rect","bbox":[388,518,34,44]}
+{"kind":"shape","slide":8,"id":"45","role":"rect","shapeType":"rect","bbox":[440,518,34,44]}
+{"kind":"shape","slide":8,"id":"46","role":"rect","shapeType":"rect","bbox":[154,572,392,18]}
+{"kind":"textbox","slide":8,"id":"46","role":"text","text":"斑马线：检测 mask 面积、方向角、画面中心偏移","textPreview":"斑马线：检测 mask 面积、方向角、画面中心偏移","textChars":25,"textLines":1,"bbox":[154,572,392,18]}
+{"kind":"shape","slide":8,"id":"47","role":"roundRect","shapeType":"roundRect","bbox":[706,486,300,102]}
+{"kind":"shape","slide":8,"id":"48","role":"ellipse","shapeType":"ellipse","bbox":[748,512,34,34]}
+{"kind":"shape","slide":8,"id":"49","role":"ellipse","shapeType":"ellipse","bbox":[814,512,34,34]}
+{"kind":"shape","slide":8,"id":"50","role":"ellipse","shapeType":"ellipse","bbox":[880,512,34,34]}
+{"kind":"shape","slide":8,"id":"51","role":"rect","shapeType":"rect","bbox":[734,572,246,18]}
+{"kind":"textbox","slide":8,"id":"51","role":"text","text":"红绿灯：检测状态并给出安全提示","textPreview":"红绿灯：检测状态并给出安全提示","textChars":15,"textLines":1,"bbox":[734,572,246,18]}
+{"kind":"slide","slide":9,"id":"slide-9"}
+{"kind":"shape","slide":9,"id":"2","role":"rect","shapeType":"rect","bbox":[0,0,1280,720]}
+{"kind":"shape","slide":9,"id":"3","role":"rect","shapeType":"rect","bbox":[0,0,1280,12]}
+{"kind":"shape","slide":9,"id":"4","role":"ellipse","shapeType":"ellipse","bbox":[-92,516,260,260]}
+{"kind":"shape","slide":9,"id":"5","role":"ellipse","shapeType":"ellipse","bbox":[1078,-120,260,260]}
+{"kind":"shape","slide":9,"id":"6","role":"ellipse","shapeType":"ellipse","bbox":[94,656,5,5]}
+{"kind":"shape","slide":9,"id":"7","role":"ellipse","shapeType":"ellipse","bbox":[128,656,5,5]}
+{"kind":"shape","slide":9,"id":"8","role":"ellipse","shapeType":"ellipse","bbox":[162,656,5,5]}
+{"kind":"shape","slide":9,"id":"9","role":"ellipse","shapeType":"ellipse","bbox":[196,656,5,5]}
+{"kind":"shape","slide":9,"id":"10","role":"ellipse","shapeType":"ellipse","bbox":[230,656,5,5]}
+{"kind":"shape","slide":9,"id":"11","role":"ellipse","shapeType":"ellipse","bbox":[264,656,5,5]}
+{"kind":"shape","slide":9,"id":"12","role":"ellipse","shapeType":"ellipse","bbox":[298,656,5,5]}
+{"kind":"shape","slide":9,"id":"13","role":"ellipse","shapeType":"ellipse","bbox":[332,656,5,5]}
+{"kind":"shape","slide":9,"id":"14","role":"rect","shapeType":"rect","bbox":[64,33,88,24]}
+{"kind":"textbox","slide":9,"id":"14","role":"text","text":"08","textPreview":"08","textChars":2,"textLines":1,"bbox":[64,33,88,24]}
+{"kind":"shape","slide":9,"id":"15","role":"rect","shapeType":"rect","bbox":[154,32,500,26]}
+{"kind":"textbox","slide":9,"id":"15","role":"text","text":"语音交互与 AI","textPreview":"语音交互与 AI","textChars":8,"textLines":1,"bbox":[154,32,500,26]}
+{"kind":"shape","slide":9,"id":"16","role":"rect","shapeType":"rect","bbox":[1118,32,98,24]}
+{"kind":"textbox","slide":9,"id":"16","role":"text","text":"09 / 14","textPreview":"09 / 14","textChars":7,"textLines":1,"bbox":[1118,32,98,24]}
+{"kind":"shape","slide":9,"id":"17","role":"rect","shapeType":"rect","bbox":[64,65,1152,1.5]}
+{"kind":"shape","slide":9,"id":"18","role":"rect","shapeType":"rect","bbox":[64,92,730,62]}
+{"kind":"textbox","slide":9,"id":"18","role":"text","text":"语音交互与 AI","textPreview":"语音交互与 AI","textChars":8,"textLines":1,"bbox":[64,92,730,62]}
+{"kind":"shape","slide":9,"id":"19","role":"rect","shapeType":"rect","bbox":[66,156,760,46]}
+{"kind":"textbox","slide":9,"id":"19","role":"text","text":"语音链路同时服务“导航命令”和“普通问答”，后端根据模式决定是否暂停 AI 输入。","textPreview":"语音链路同时服务“导航命令”和“普通问答”，后端根据模式决定是否暂停 AI 输入。","textChars":41,"textLines":1,"bbox":[66,156,760,46]}
+{"kind":"shape","slide":9,"id":"20","role":"rect","shapeType":"rect","bbox":[88,216,160,24]}
+{"kind":"textbox","slide":9,"id":"20","role":"text","text":"导航指令通道","textPreview":"导航指令通道","textChars":6,"textLines":1,"bbox":[88,216,160,24]}
+{"kind":"shape","slide":9,"id":"21","role":"rect","shapeType":"rect","bbox":[88,382,160,24]}
+{"kind":"textbox","slide":9,"id":"21","role":"text","text":"普通问答通道","textPreview":"普通问答通道","textChars":6,"textLines":1,"bbox":[88,382,160,24]}
+{"kind":"shape","slide":9,"id":"22","role":"roundRect","shapeType":"roundRect","bbox":[96,258,210,86]}
+{"kind":"shape","slide":9,"id":"23","role":"rect","shapeType":"rect","bbox":[116,274,170,22]}
+{"kind":"textbox","slide":9,"id":"23","role":"text","text":"麦克风音频","textPreview":"麦克风音频","textChars":5,"textLines":1,"bbox":[116,274,170,22]}
+{"kind":"shape","slide":9,"id":"24","role":"rect","shapeType":"rect","bbox":[116,306,170,18]}
+{"kind":"textbox","slide":9,"id":"24","role":"text","text":"PCM16","textPreview":"PCM16","textChars":5,"textLines":1,"bbox":[116,306,170,18]}
+{"kind":"shape","slide":9,"id":"25","role":"roundRect","shapeType":"roundRect","bbox":[376,258,210,86]}
+{"kind":"shape","slide":9,"id":"26","role":"rect","shapeType":"rect","bbox":[396,274,170,22]}
+{"kind":"textbox","slide":9,"id":"26","role":"text","text":"ASR 转写","textPreview":"ASR 转写","textChars":6,"textLines":1,"bbox":[396,274,170,22]}
+{"kind":"shape","slide":9,"id":"27","role":"rect","shapeType":"rect","bbox":[396,306,170,18]}
+{"kind":"textbox","slide":9,"id":"27","role":"text","text":"识别中文命令","textPreview":"识别中文命令","textChars":6,"textLines":1,"bbox":[396,306,170,18]}
+{"kind":"shape","slide":9,"id":"28","role":"flow arrow","shapeType":"rightArrow","bbox":[316,291,50,20]}
+{"kind":"shape","slide":9,"id":"29","role":"roundRect","shapeType":"roundRect","bbox":[656,258,210,86]}
+{"kind":"shape","slide":9,"id":"30","role":"rect","shapeType":"rect","bbox":[676,274,170,22]}
+{"kind":"textbox","slide":9,"id":"30","role":"text","text":"命令分流","textPreview":"命令分流","textChars":4,"textLines":1,"bbox":[676,274,170,22]}
+{"kind":"shape","slide":9,"id":"31","role":"rect","shapeType":"rect","bbox":[676,306,170,18]}
+{"kind":"textbox","slide":9,"id":"31","role":"text","text":"导盲/过街/寻物","textPreview":"导盲/过街/寻物","textChars":8,"textLines":1,"bbox":[676,306,170,18]}
+{"kind":"shape","slide":9,"id":"32","role":"flow arrow","shapeType":"rightArrow","bbox":[596,291,50,20]}
+{"kind":"shape","slide":9,"id":"33","role":"roundRect","shapeType":"roundRect","bbox":[936,258,210,86]}
+{"kind":"shape","slide":9,"id":"34","role":"rect","shapeType":"rect","bbox":[956,274,170,22]}
+{"kind":"textbox","slide":9,"id":"34","role":"text","text":"设备播报","textPreview":"设备播报","textChars":4,"textLines":1,"bbox":[956,274,170,22]}
+{"kind":"shape","slide":9,"id":"35","role":"rect","shapeType":"rect","bbox":[956,306,170,18]}
+{"kind":"textbox","slide":9,"id":"35","role":"text","text":"预生成 wav","textPreview":"预生成 wav","textChars":7,"textLines":1,"bbox":[956,306,170,18]}
+{"kind":"shape","slide":9,"id":"36","role":"flow arrow","shapeType":"rightArrow","bbox":[876,291,50,20]}
+{"kind":"shape","slide":9,"id":"37","role":"roundRect","shapeType":"roundRect","bbox":[96,424,210,86]}
+{"kind":"shape","slide":9,"id":"38","role":"rect","shapeType":"rect","bbox":[116,440,170,22]}
+{"kind":"textbox","slide":9,"id":"38","role":"text","text":"麦克风音频","textPreview":"麦克风音频","textChars":5,"textLines":1,"bbox":[116,440,170,22]}
+{"kind":"shape","slide":9,"id":"39","role":"rect","shapeType":"rect","bbox":[116,472,170,18]}
+{"kind":"textbox","slide":9,"id":"39","role":"text","text":"PCM16","textPreview":"PCM16","textChars":5,"textLines":1,"bbox":[116,472,170,18]}
+{"kind":"shape","slide":9,"id":"40","role":"roundRect","shapeType":"roundRect","bbox":[376,424,210,86]}
+{"kind":"shape","slide":9,"id":"41","role":"rect","shapeType":"rect","bbox":[396,440,170,22]}
+{"kind":"textbox","slide":9,"id":"41","role":"text","text":"Qwen Omni","textPreview":"Qwen Omni","textChars":9,"textLines":1,"bbox":[396,440,170,22]}
+{"kind":"shape","slide":9,"id":"42","role":"rect","shapeType":"rect","bbox":[396,472,170,18]}
+{"kind":"textbox","slide":9,"id":"42","role":"text","text":"图像+文本问答","textPreview":"图像+文本问答","textChars":7,"textLines":1,"bbox":[396,472,170,18]}
+{"kind":"shape","slide":9,"id":"43","role":"flow arrow","shapeType":"rightArrow","bbox":[316,457,50,20]}
+{"kind":"shape","slide":9,"id":"44","role":"roundRect","shapeType":"roundRect","bbox":[656,424,210,86]}
+{"kind":"shape","slide":9,"id":"45","role":"rect","shapeType":"rect","bbox":[676,440,170,22]}
+{"kind":"textbox","slide":9,"id":"45","role":"text","text":"音频下行","textPreview":"音频下行","textChars":4,"textLines":1,"bbox":[676,440,170,22]}
+{"kind":"shape","slide":9,"id":"46","role":"rect","shapeType":"rect","bbox":[676,472,170,18]}
+{"kind":"textbox","slide":9,"id":"46","role":"text","text":"24k→8k PCM","textPreview":"24k→8k PCM","textChars":10,"textLines":1,"bbox":[676,472,170,18]}
+{"kind":"shape","slide":9,"id":"47","role":"flow arrow","shapeType":"rightArrow","bbox":[596,457,50,20]}
+{"kind":"shape","slide":9,"id":"48","role":"roundRect","shapeType":"roundRect","bbox":[936,424,210,86]}
+{"kind":"shape","slide":9,"id":"49","role":"rect","shapeType":"rect","bbox":[956,440,170,22]}
+{"kind":"textbox","slide":9,"id":"49","role":"text","text":"浏览器/设备","textPreview":"浏览器/设备","textChars":6,"textLines":1,"bbox":[956,440,170,22]}
+{"kind":"shape","slide":9,"id":"50","role":"rect","shapeType":"rect","bbox":[956,472,170,18]}
+{"kind":"textbox","slide":9,"id":"50","role":"text","text":"播放回复","textPreview":"播放回复","textChars":4,"textLines":1,"bbox":[956,472,170,18]}
+{"kind":"shape","slide":9,"id":"51","role":"flow arrow","shapeType":"rightArrow","bbox":[876,457,50,20]}
+{"kind":"shape","slide":9,"id":"52","role":"roundRect","shapeType":"roundRect","bbox":[178,578,878,54]}
+{"kind":"shape","slide":9,"id":"53","role":"rect","shapeType":"rect","bbox":[214,595,806,22]}
+{"kind":"textbox","slide":9,"id":"53","role":"text","text":"关键策略：导航模式下优先保障安全提示，普通 AI 回复可暂停；问答模式下再恢复实时语音交互。","textPreview":"关键策略：导航模式下优先保障安全提示，普通 AI 回复可暂停；问答模式下再恢复实时语音交互。","textChars":46,"textLines":1,"bbox":[214,595,806,22]}
+{"kind":"slide","slide":10,"id":"slide-10"}
+{"kind":"shape","slide":10,"id":"2","role":"rect","shapeType":"rect","bbox":[0,0,1280,720]}
+{"kind":"shape","slide":10,"id":"3","role":"rect","shapeType":"rect","bbox":[0,0,1280,12]}
+{"kind":"shape","slide":10,"id":"4","role":"ellipse","shapeType":"ellipse","bbox":[-92,516,260,260]}
+{"kind":"shape","slide":10,"id":"5","role":"ellipse","shapeType":"ellipse","bbox":[1078,-120,260,260]}
+{"kind":"shape","slide":10,"id":"6","role":"ellipse","shapeType":"ellipse","bbox":[94,656,5,5]}
+{"kind":"shape","slide":10,"id":"7","role":"ellipse","shapeType":"ellipse","bbox":[128,656,5,5]}
+{"kind":"shape","slide":10,"id":"8","role":"ellipse","shapeType":"ellipse","bbox":[162,656,5,5]}
+{"kind":"shape","slide":10,"id":"9","role":"ellipse","shapeType":"ellipse","bbox":[196,656,5,5]}
+{"kind":"shape","slide":10,"id":"10","role":"ellipse","shapeType":"ellipse","bbox":[230,656,5,5]}
+{"kind":"shape","slide":10,"id":"11","role":"ellipse","shapeType":"ellipse","bbox":[264,656,5,5]}
+{"kind":"shape","slide":10,"id":"12","role":"ellipse","shapeType":"ellipse","bbox":[298,656,5,5]}
+{"kind":"shape","slide":10,"id":"13","role":"ellipse","shapeType":"ellipse","bbox":[332,656,5,5]}
+{"kind":"shape","slide":10,"id":"14","role":"rect","shapeType":"rect","bbox":[64,33,88,24]}
+{"kind":"textbox","slide":10,"id":"14","role":"text","text":"09","textPreview":"09","textChars":2,"textLines":1,"bbox":[64,33,88,24]}
+{"kind":"shape","slide":10,"id":"15","role":"rect","shapeType":"rect","bbox":[154,32,500,26]}
+{"kind":"textbox","slide":10,"id":"15","role":"text","text":"前端控制台与调试","textPreview":"前端控制台与调试","textChars":8,"textLines":1,"bbox":[154,32,500,26]}
+{"kind":"shape","slide":10,"id":"16","role":"rect","shapeType":"rect","bbox":[1118,32,98,24]}
+{"kind":"textbox","slide":10,"id":"16","role":"text","text":"10 / 14","textPreview":"10 / 14","textChars":7,"textLines":1,"bbox":[1118,32,98,24]}
+{"kind":"shape","slide":10,"id":"17","role":"rect","shapeType":"rect","bbox":[64,65,1152,1.5]}
+{"kind":"shape","slide":10,"id":"18","role":"rect","shapeType":"rect","bbox":[64,92,730,62]}
+{"kind":"textbox","slide":10,"id":"18","role":"text","text":"前端控制台与调试","textPreview":"前端控制台与调试","textChars":8,"textLines":1,"bbox":[64,92,730,62]}
+{"kind":"shape","slide":10,"id":"19","role":"rect","shapeType":"rect","bbox":[66,156,760,46]}
+{"kind":"textbox","slide":10,"id":"19","role":"text","text":"Vue 控制台用于演示、调参和排障，能看到原始流、标注流、模式状态和音频事件。","textPreview":"Vue 控制台用于演示、调参和排障，能看到原始流、标注流、模式状态和音频事件。","textChars":39,"textLines":1,"bbox":[66,156,760,46]}
+{"kind":"shape","slide":10,"id":"20","role":"roundRect","shapeType":"roundRect","bbox":[82,230,720,400]}
+{"kind":"shape","slide":10,"id":"21","role":"rect","shapeType":"rect","bbox":[110,270,430,260]}
+{"kind":"shape","slide":10,"id":"22","role":"trapezoid","shapeType":"trapezoid","bbox":[226,330,188,154]}
+{"kind":"shape","slide":10,"id":"23","role":"trapezoid","shapeType":"trapezoid","bbox":[254,348,132,124]}
+{"kind":"shape","slide":10,"id":"24","role":"ellipse","shapeType":"ellipse","bbox":[420,376,40,40]}
+{"kind":"shape","slide":10,"id":"25","role":"rect","shapeType":"rect","bbox":[124,244,260,20]}
+{"kind":"textbox","slide":10,"id":"25","role":"text","text":"Live / Vision Preview","textPreview":"Live / Vision Preview","textChars":21,"textLines":1,"bbox":[124,244,260,20]}
+{"kind":"shape","slide":10,"id":"26","role":"roundRect","shapeType":"roundRect","bbox":[574,270,190,58]}
+{"kind":"shape","slide":10,"id":"27","role":"rect","shapeType":"rect","bbox":[596,286,146,20]}
+{"kind":"textbox","slide":10,"id":"27","role":"text","text":"设备在线","textPreview":"设备在线","textChars":4,"textLines":1,"bbox":[596,286,146,20]}
+{"kind":"shape","slide":10,"id":"28","role":"roundRect","shapeType":"roundRect","bbox":[574,350,190,58]}
+{"kind":"shape","slide":10,"id":"29","role":"rect","shapeType":"rect","bbox":[596,366,146,20]}
+{"kind":"textbox","slide":10,"id":"29","role":"text","text":"导盲模式","textPreview":"导盲模式","textChars":4,"textLines":1,"bbox":[596,366,146,20]}
+{"kind":"shape","slide":10,"id":"30","role":"roundRect","shapeType":"roundRect","bbox":[574,430,190,58]}
+{"kind":"shape","slide":10,"id":"31","role":"rect","shapeType":"rect","bbox":[596,446,146,20]}
+{"kind":"textbox","slide":10,"id":"31","role":"text","text":"音频分片","textPreview":"音频分片","textChars":4,"textLines":1,"bbox":[596,446,146,20]}
+{"kind":"shape","slide":10,"id":"32","role":"rect","shapeType":"rect","bbox":[112,556,650,1]}
+{"kind":"shape","slide":10,"id":"33","role":"rect","shapeType":"rect","bbox":[124,576,600,20]}
+{"kind":"textbox","slide":10,"id":"33","role":"text","text":"ws://...  videoSeqGaps / audioSeqGaps / navigationEvents","textPreview":"ws://...  videoSeqGaps / audioSeqGaps / navigationEvents","textChars":56,"textLines":1,"bbox":[124,576,600,20]}
+{"kind":"shape","slide":10,"id":"34","role":"roundRect","shapeType":"roundRect","bbox":[858,250,300,96]}
+{"kind":"shape","slide":10,"id":"35","role":"rect","shapeType":"rect","bbox":[858,250,7,96]}
+{"kind":"shape","slide":10,"id":"36","role":"rect","shapeType":"rect","bbox":[884,273,248,30]}
+{"kind":"textbox","slide":10,"id":"36","role":"text","text":"演示价值","textPreview":"演示价值","textChars":4,"textLines":1,"bbox":[884,273,248,30]}
+{"kind":"shape","slide":10,"id":"37","role":"rect","shapeType":"rect","bbox":[884,318,248,12]}
+{"kind":"textbox","slide":10,"id":"37","role":"text","text":"答辩时可以直接展示设备画面、AI 音频和导航事件，降低口述成本。","textPreview":"答辩时可以直接展示设备画面、AI 音频和导航事件，降低口述成本。","textChars":32,"textLines":1,"bbox":[884,318,248,12]}
+{"kind":"shape","slide":10,"id":"38","role":"roundRect","shapeType":"roundRect","bbox":[858,374,300,96]}
+{"kind":"shape","slide":10,"id":"39","role":"rect","shapeType":"rect","bbox":[858,374,7,96]}
+{"kind":"shape","slide":10,"id":"40","role":"rect","shapeType":"rect","bbox":[884,397,248,30]}
+{"kind":"textbox","slide":10,"id":"40","role":"text","text":"调试价值","textPreview":"调试价值","textChars":4,"textLines":1,"bbox":[884,397,248,30]}
+{"kind":"shape","slide":10,"id":"41","role":"rect","shapeType":"rect","bbox":[884,442,248,12]}
+{"kind":"textbox","slide":10,"id":"41","role":"text","text":"定位 UDP 丢包、worker 状态、模式切换失败和浏览器音频解锁问题。","textPreview":"定位 UDP 丢包、worker 状态、模式切换失败和浏览器音频解锁问题。","textChars":37,"textLines":1,"bbox":[884,442,248,12]}
+{"kind":"shape","slide":10,"id":"42","role":"roundRect","shapeType":"roundRect","bbox":[858,498,300,96]}
+{"kind":"shape","slide":10,"id":"43","role":"rect","shapeType":"rect","bbox":[858,498,7,96]}
+{"kind":"shape","slide":10,"id":"44","role":"rect","shapeType":"rect","bbox":[884,521,248,30]}
+{"kind":"textbox","slide":10,"id":"44","role":"text","text":"部署价值","textPreview":"部署价值","textChars":4,"textLines":1,"bbox":[884,521,248,30]}
+{"kind":"shape","slide":10,"id":"45","role":"rect","shapeType":"rect","bbox":[884,566,248,12]}
+{"kind":"textbox","slide":10,"id":"45","role":"text","text":"前端可独立构建为静态页面，并通过 Nginx 反向代理后端接口。","textPreview":"前端可独立构建为静态页面，并通过 Nginx 反向代理后端接口。","textChars":32,"textLines":1,"bbox":[884,566,248,12]}
+{"kind":"slide","slide":11,"id":"slide-11"}
+{"kind":"shape","slide":11,"id":"2","role":"rect","shapeType":"rect","bbox":[0,0,1280,720]}
+{"kind":"shape","slide":11,"id":"3","role":"rect","shapeType":"rect","bbox":[0,0,1280,12]}
+{"kind":"shape","slide":11,"id":"4","role":"ellipse","shapeType":"ellipse","bbox":[-92,516,260,260]}
+{"kind":"shape","slide":11,"id":"5","role":"ellipse","shapeType":"ellipse","bbox":[1078,-120,260,260]}
+{"kind":"shape","slide":11,"id":"6","role":"ellipse","shapeType":"ellipse","bbox":[94,656,5,5]}
+{"kind":"shape","slide":11,"id":"7","role":"ellipse","shapeType":"ellipse","bbox":[128,656,5,5]}
+{"kind":"shape","slide":11,"id":"8","role":"ellipse","shapeType":"ellipse","bbox":[162,656,5,5]}
+{"kind":"shape","slide":11,"id":"9","role":"ellipse","shapeType":"ellipse","bbox":[196,656,5,5]}
+{"kind":"shape","slide":11,"id":"10","role":"ellipse","shapeType":"ellipse","bbox":[230,656,5,5]}
+{"kind":"shape","slide":11,"id":"11","role":"ellipse","shapeType":"ellipse","bbox":[264,656,5,5]}
+{"kind":"shape","slide":11,"id":"12","role":"ellipse","shapeType":"ellipse","bbox":[298,656,5,5]}
+{"kind":"shape","slide":11,"id":"13","role":"ellipse","shapeType":"ellipse","bbox":[332,656,5,5]}
+{"kind":"shape","slide":11,"id":"14","role":"rect","shapeType":"rect","bbox":[64,33,88,24]}
+{"kind":"textbox","slide":11,"id":"14","role":"text","text":"10","textPreview":"10","textChars":2,"textLines":1,"bbox":[64,33,88,24]}
+{"kind":"shape","slide":11,"id":"15","role":"rect","shapeType":"rect","bbox":[154,32,500,26]}
+{"kind":"textbox","slide":11,"id":"15","role":"text","text":"测试与验证","textPreview":"测试与验证","textChars":5,"textLines":1,"bbox":[154,32,500,26]}
+{"kind":"shape","slide":11,"id":"16","role":"rect","shapeType":"rect","bbox":[1118,32,98,24]}
+{"kind":"textbox","slide":11,"id":"16","role":"text","text":"11 / 14","textPreview":"11 / 14","textChars":7,"textLines":1,"bbox":[1118,32,98,24]}
+{"kind":"shape","slide":11,"id":"17","role":"rect","shapeType":"rect","bbox":[64,65,1152,1.5]}
+{"kind":"shape","slide":11,"id":"18","role":"rect","shapeType":"rect","bbox":[64,92,730,62]}
+{"kind":"textbox","slide":11,"id":"18","role":"text","text":"测试与验证","textPreview":"测试与验证","textChars":5,"textLines":1,"bbox":[64,92,730,62]}
+{"kind":"shape","slide":11,"id":"19","role":"rect","shapeType":"rect","bbox":[66,156,760,46]}
+{"kind":"textbox","slide":11,"id":"19","role":"text","text":"当前代码已完成基础工程验证，覆盖 Python worker、Go 后端和 Vue 前端构建链路。","textPreview":"当前代码已完成基础工程验证，覆盖 Python worker、Go 后端和 Vue 前端构建链路。","textChars":49,"textLines":1,"bbox":[66,156,760,46]}
+{"kind":"shape","slide":11,"id":"20","role":"roundRect","shapeType":"roundRect","bbox":[92,248,330,156]}
+{"kind":"shape","slide":11,"id":"21","role":"rect","shapeType":"rect","bbox":[92,248,330,7]}
+{"kind":"shape","slide":11,"id":"22","role":"rect","shapeType":"rect","bbox":[110,272,294,46]}
+{"kind":"textbox","slide":11,"id":"22","role":"text","text":"通过","textPreview":"通过","textChars":2,"textLines":1,"bbox":[110,272,294,46]}
+{"kind":"shape","slide":11,"id":"23","role":"rect","shapeType":"rect","bbox":[112,326,290,36]}
+{"kind":"textbox","slide":11,"id":"23","role":"text","text":"Python 语法编译\npython -m py_compile","textPreview":"Python 语法编译 | python -m py_compile","textChars":32,"textLines":2,"bbox":[112,326,290,36]}
+{"kind":"shape","slide":11,"id":"24","role":"roundRect","shapeType":"roundRect","bbox":[474,248,330,156]}
+{"kind":"shape","slide":11,"id":"25","role":"rect","shapeType":"rect","bbox":[474,248,330,7]}
+{"kind":"shape","slide":11,"id":"26","role":"rect","shapeType":"rect","bbox":[492,272,294,46]}
+{"kind":"textbox","slide":11,"id":"26","role":"text","text":"通过","textPreview":"通过","textChars":2,"textLines":1,"bbox":[492,272,294,46]}
+{"kind":"shape","slide":11,"id":"27","role":"rect","shapeType":"rect","bbox":[494,326,290,36]}
+{"kind":"textbox","slide":11,"id":"27","role":"text","text":"Go 后端测试\ngo test ./...","textPreview":"Go 后端测试 | go test ./...","textChars":21,"textLines":2,"bbox":[494,326,290,36]}
+{"kind":"shape","slide":11,"id":"28","role":"roundRect","shapeType":"roundRect","bbox":[856,248,330,156]}
+{"kind":"shape","slide":11,"id":"29","role":"rect","shapeType":"rect","bbox":[856,248,330,7]}
+{"kind":"shape","slide":11,"id":"30","role":"rect","shapeType":"rect","bbox":[874,272,294,46]}
+{"kind":"textbox","slide":11,"id":"30","role":"text","text":"通过","textPreview":"通过","textChars":2,"textLines":1,"bbox":[874,272,294,46]}
+{"kind":"shape","slide":11,"id":"31","role":"rect","shapeType":"rect","bbox":[876,326,290,36]}
+{"kind":"textbox","slide":11,"id":"31","role":"text","text":"前端生产构建\nnpm run build","textPreview":"前端生产构建 | npm run build","textChars":20,"textLines":2,"bbox":[876,326,290,36]}
+{"kind":"shape","slide":11,"id":"32","role":"roundRect","shapeType":"roundRect","bbox":[132,490,1016,92]}
+{"kind":"shape","slide":11,"id":"33","role":"rect","shapeType":"rect","bbox":[168,510,150,22]}
+{"kind":"textbox","slide":11,"id":"33","role":"text","text":"联调验收路径","textPreview":"联调验收路径","textChars":6,"textLines":1,"bbox":[168,510,150,22]}
+{"kind":"shape","slide":11,"id":"34","role":"rect","shapeType":"rect","bbox":[328,510,760,22]}
+{"kind":"textbox","slide":11,"id":"34","role":"text","text":"worker /api/vision/status  →  Go /healthz 与 /api/status  →  浏览器 #live  →  设备 UDP 8888 上线","textPreview":"worker /api/vision/status  →  Go /healthz 与 /api/status  →  浏览器 #live  →  设备 UDP 8888 上线","textChars":88,"textLines":1,"bbox":[328,510,760,22]}
+{"kind":"shape","slide":11,"id":"35","role":"rect","shapeType":"rect","bbox":[168,548,880,18]}
+{"kind":"textbox","slide":11,"id":"35","role":"text","text":"说明：答辩现场如需演示，可优先展示前端实时页、模式切换和导航事件，模型推理速度取决于服务器算力。","textPreview":"说明：答辩现场如需演示，可优先展示前端实时页、模式切换和导航事件，模型推理速度取决于服务器算力。","textChars":48,"textLines":1,"bbox":[168,548,880,18]}
+{"kind":"slide","slide":12,"id":"slide-12"}
+{"kind":"shape","slide":12,"id":"2","role":"rect","shapeType":"rect","bbox":[0,0,1280,720]}
+{"kind":"shape","slide":12,"id":"3","role":"rect","shapeType":"rect","bbox":[0,0,1280,12]}
+{"kind":"shape","slide":12,"id":"4","role":"ellipse","shapeType":"ellipse","bbox":[-92,516,260,260]}
+{"kind":"shape","slide":12,"id":"5","role":"ellipse","shapeType":"ellipse","bbox":[1078,-120,260,260]}
+{"kind":"shape","slide":12,"id":"6","role":"ellipse","shapeType":"ellipse","bbox":[94,656,5,5]}
+{"kind":"shape","slide":12,"id":"7","role":"ellipse","shapeType":"ellipse","bbox":[128,656,5,5]}
+{"kind":"shape","slide":12,"id":"8","role":"ellipse","shapeType":"ellipse","bbox":[162,656,5,5]}
+{"kind":"shape","slide":12,"id":"9","role":"ellipse","shapeType":"ellipse","bbox":[196,656,5,5]}
+{"kind":"shape","slide":12,"id":"10","role":"ellipse","shapeType":"ellipse","bbox":[230,656,5,5]}
+{"kind":"shape","slide":12,"id":"11","role":"ellipse","shapeType":"ellipse","bbox":[264,656,5,5]}
+{"kind":"shape","slide":12,"id":"12","role":"ellipse","shapeType":"ellipse","bbox":[298,656,5,5]}
+{"kind":"shape","slide":12,"id":"13","role":"ellipse","shapeType":"ellipse","bbox":[332,656,5,5]}
+{"kind":"shape","slide":12,"id":"14","role":"rect","shapeType":"rect","bbox":[64,33,88,24]}
+{"kind":"textbox","slide":12,"id":"14","role":"text","text":"11","textPreview":"11","textChars":2,"textLines":1,"bbox":[64,33,88,24]}
+{"kind":"shape","slide":12,"id":"15","role":"rect","shapeType":"rect","bbox":[154,32,500,26]}
+{"kind":"textbox","slide":12,"id":"15","role":"text","text":"难点与创新点","textPreview":"难点与创新点","textChars":6,"textLines":1,"bbox":[154,32,500,26]}
+{"kind":"shape","slide":12,"id":"16","role":"rect","shapeType":"rect","bbox":[1118,32,98,24]}
+{"kind":"textbox","slide":12,"id":"16","role":"text","text":"12 / 14","textPreview":"12 / 14","textChars":7,"textLines":1,"bbox":[1118,32,98,24]}
+{"kind":"shape","slide":12,"id":"17","role":"rect","shapeType":"rect","bbox":[64,65,1152,1.5]}
+{"kind":"shape","slide":12,"id":"18","role":"rect","shapeType":"rect","bbox":[64,92,730,62]}
+{"kind":"textbox","slide":12,"id":"18","role":"text","text":"难点与创新点","textPreview":"难点与创新点","textChars":6,"textLines":1,"bbox":[64,92,730,62]}
+{"kind":"shape","slide":12,"id":"19","role":"rect","shapeType":"rect","bbox":[66,156,760,46]}
+{"kind":"textbox","slide":12,"id":"19","role":"text","text":"本项目的价值主要体现在多模块协同和端云结合，而不是单一模型调用。","textPreview":"本项目的价值主要体现在多模块协同和端云结合，而不是单一模型调用。","textChars":32,"textLines":1,"bbox":[66,156,760,46]}
+{"kind":"shape","slide":12,"id":"20","role":"roundRect","shapeType":"roundRect","bbox":[92,242,476,132]}
+{"kind":"shape","slide":12,"id":"21","role":"rect","shapeType":"rect","bbox":[92,242,7,132]}
+{"kind":"shape","slide":12,"id":"22","role":"ellipse","shapeType":"ellipse","bbox":[114,266,38,38]}
+{"kind":"shape","slide":12,"id":"23","role":"rect","shapeType":"rect","bbox":[114,273,38,18]}
+{"kind":"textbox","slide":12,"id":"23","role":"text","text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[114,273,38,18]}
+{"kind":"shape","slide":12,"id":"24","role":"rect","shapeType":"rect","bbox":[168,267,378,30]}
+{"kind":"textbox","slide":12,"id":"24","role":"text","text":"低延迟流媒体","textPreview":"低延迟流媒体","textChars":6,"textLines":1,"bbox":[168,267,378,30]}
+{"kind":"shape","slide":12,"id":"25","role":"rect","shapeType":"rect","bbox":[118,310,424,48]}
+{"kind":"textbox","slide":12,"id":"25","role":"text","text":"自定义 UDP 包处理视频分片、音频序列和设备端播放回包，适合连续音视频流。","textPreview":"自定义 UDP 包处理视频分片、音频序列和设备端播放回包，适合连续音视频流。","textChars":38,"textLines":1,"bbox":[118,310,424,48]}
+{"kind":"shape","slide":12,"id":"26","role":"roundRect","shapeType":"roundRect","bbox":[642,242,476,132]}
+{"kind":"shape","slide":12,"id":"27","role":"rect","shapeType":"rect","bbox":[642,242,7,132]}
+{"kind":"shape","slide":12,"id":"28","role":"ellipse","shapeType":"ellipse","bbox":[664,266,38,38]}
+{"kind":"shape","slide":12,"id":"29","role":"rect","shapeType":"rect","bbox":[664,273,38,18]}
+{"kind":"textbox","slide":12,"id":"29","role":"text","text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[664,273,38,18]}
+{"kind":"shape","slide":12,"id":"30","role":"rect","shapeType":"rect","bbox":[718,267,378,30]}
+{"kind":"textbox","slide":12,"id":"30","role":"text","text":"跨语言协同","textPreview":"跨语言协同","textChars":5,"textLines":1,"bbox":[718,267,378,30]}
+{"kind":"shape","slide":12,"id":"31","role":"rect","shapeType":"rect","bbox":[668,310,424,48]}
+{"kind":"textbox","slide":12,"id":"31","role":"text","text":"Go 负责连接和并发，Python 负责视觉模型，Vue 负责实时观察，职责边界清晰。","textPreview":"Go 负责连接和并发，Python 负责视觉模型，Vue 负责实时观察，职责边界清晰。","textChars":43,"textLines":1,"bbox":[668,310,424,48]}
+{"kind":"shape","slide":12,"id":"32","role":"roundRect","shapeType":"roundRect","bbox":[92,420,476,132]}
+{"kind":"shape","slide":12,"id":"33","role":"rect","shapeType":"rect","bbox":[92,420,7,132]}
+{"kind":"shape","slide":12,"id":"34","role":"ellipse","shapeType":"ellipse","bbox":[114,444,38,38]}
+{"kind":"shape","slide":12,"id":"35","role":"rect","shapeType":"rect","bbox":[114,451,38,18]}
+{"kind":"textbox","slide":12,"id":"35","role":"text","text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[114,451,38,18]}
+{"kind":"shape","slide":12,"id":"36","role":"rect","shapeType":"rect","bbox":[168,445,378,30]}
+{"kind":"textbox","slide":12,"id":"36","role":"text","text":"导航状态机","textPreview":"导航状态机","textChars":5,"textLines":1,"bbox":[168,445,378,30]}
+{"kind":"shape","slide":12,"id":"37","role":"rect","shapeType":"rect","bbox":[118,488,424,48]}
+{"kind":"textbox","slide":12,"id":"37","role":"text","text":"导盲、过街、红绿灯和问答模式互斥/切换，避免语音提示互相干扰。","textPreview":"导盲、过街、红绿灯和问答模式互斥/切换，避免语音提示互相干扰。","textChars":31,"textLines":1,"bbox":[118,488,424,48]}
+{"kind":"shape","slide":12,"id":"38","role":"roundRect","shapeType":"roundRect","bbox":[642,420,476,132]}
+{"kind":"shape","slide":12,"id":"39","role":"rect","shapeType":"rect","bbox":[642,420,7,132]}
+{"kind":"shape","slide":12,"id":"40","role":"ellipse","shapeType":"ellipse","bbox":[664,444,38,38]}
+{"kind":"shape","slide":12,"id":"41","role":"rect","shapeType":"rect","bbox":[664,451,38,18]}
+{"kind":"textbox","slide":12,"id":"41","role":"text","text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[664,451,38,18]}
+{"kind":"shape","slide":12,"id":"42","role":"rect","shapeType":"rect","bbox":[718,445,378,30]}
+{"kind":"textbox","slide":12,"id":"42","role":"text","text":"多模型融合","textPreview":"多模型融合","textChars":5,"textLines":1,"bbox":[718,445,378,30]}
+{"kind":"shape","slide":12,"id":"43","role":"rect","shapeType":"rect","bbox":[668,488,424,48]}
+{"kind":"textbox","slide":12,"id":"43","role":"text","text":"盲道分割、YOLOE 障碍物、红绿灯检测和 Qwen Omni 共同服务出行辅助。","textPreview":"盲道分割、YOLOE 障碍物、红绿灯检测和 Qwen Omni 共同服务出行辅助。","textChars":41,"textLines":1,"bbox":[668,488,424,48]}
+{"kind":"shape","slide":12,"id":"44","role":"roundRect","shapeType":"roundRect","bbox":[388,592,504,44]}
+{"kind":"shape","slide":12,"id":"45","role":"rect","shapeType":"rect","bbox":[420,604,442,18]}
+{"kind":"textbox","slide":12,"id":"45","role":"text","text":"工程创新点：把“看、听、说、决策、调试”整合进一个可运行原型","textPreview":"工程创新点：把“看、听、说、决策、调试”整合进一个可运行原型","textChars":30,"textLines":1,"bbox":[420,604,442,18]}
+{"kind":"slide","slide":13,"id":"slide-13"}
+{"kind":"shape","slide":13,"id":"2","role":"rect","shapeType":"rect","bbox":[0,0,1280,720]}
+{"kind":"shape","slide":13,"id":"3","role":"rect","shapeType":"rect","bbox":[0,0,1280,12]}
+{"kind":"shape","slide":13,"id":"4","role":"ellipse","shapeType":"ellipse","bbox":[-92,516,260,260]}
+{"kind":"shape","slide":13,"id":"5","role":"ellipse","shapeType":"ellipse","bbox":[1078,-120,260,260]}
+{"kind":"shape","slide":13,"id":"6","role":"ellipse","shapeType":"ellipse","bbox":[94,656,5,5]}
+{"kind":"shape","slide":13,"id":"7","role":"ellipse","shapeType":"ellipse","bbox":[128,656,5,5]}
+{"kind":"shape","slide":13,"id":"8","role":"ellipse","shapeType":"ellipse","bbox":[162,656,5,5]}
+{"kind":"shape","slide":13,"id":"9","role":"ellipse","shapeType":"ellipse","bbox":[196,656,5,5]}
+{"kind":"shape","slide":13,"id":"10","role":"ellipse","shapeType":"ellipse","bbox":[230,656,5,5]}
+{"kind":"shape","slide":13,"id":"11","role":"ellipse","shapeType":"ellipse","bbox":[264,656,5,5]}
+{"kind":"shape","slide":13,"id":"12","role":"ellipse","shapeType":"ellipse","bbox":[298,656,5,5]}
+{"kind":"shape","slide":13,"id":"13","role":"ellipse","shapeType":"ellipse","bbox":[332,656,5,5]}
+{"kind":"shape","slide":13,"id":"14","role":"rect","shapeType":"rect","bbox":[64,33,88,24]}
+{"kind":"textbox","slide":13,"id":"14","role":"text","text":"12","textPreview":"12","textChars":2,"textLines":1,"bbox":[64,33,88,24]}
+{"kind":"shape","slide":13,"id":"15","role":"rect","shapeType":"rect","bbox":[154,32,500,26]}
+{"kind":"textbox","slide":13,"id":"15","role":"text","text":"总结与展望","textPreview":"总结与展望","textChars":5,"textLines":1,"bbox":[154,32,500,26]}
+{"kind":"shape","slide":13,"id":"16","role":"rect","shapeType":"rect","bbox":[1118,32,98,24]}
+{"kind":"textbox","slide":13,"id":"16","role":"text","text":"13 / 14","textPreview":"13 / 14","textChars":7,"textLines":1,"bbox":[1118,32,98,24]}
+{"kind":"shape","slide":13,"id":"17","role":"rect","shapeType":"rect","bbox":[64,65,1152,1.5]}
+{"kind":"shape","slide":13,"id":"18","role":"rect","shapeType":"rect","bbox":[64,92,730,62]}
+{"kind":"textbox","slide":13,"id":"18","role":"text","text":"总结与展望","textPreview":"总结与展望","textChars":5,"textLines":1,"bbox":[64,92,730,62]}
+{"kind":"shape","slide":13,"id":"19","role":"rect","shapeType":"rect","bbox":[66,156,760,46]}
+{"kind":"textbox","slide":13,"id":"19","role":"text","text":"系统已形成可运行的智能眼镜导航原型，后续可以围绕稳定性、轻量化和真实场景测试继续优化。","textPreview":"系统已形成可运行的智能眼镜导航原型，后续可以围绕稳定性、轻量化和真实场景测试继续优化。","textChars":43,"textLines":1,"bbox":[66,156,760,46]}
+{"kind":"shape","slide":13,"id":"20","role":"roundRect","shapeType":"roundRect","bbox":[94,248,500,300]}
+{"kind":"shape","slide":13,"id":"21","role":"rect","shapeType":"rect","bbox":[126,280,180,28]}
+{"kind":"textbox","slide":13,"id":"21","role":"text","text":"已完成工作","textPreview":"已完成工作","textChars":5,"textLines":1,"bbox":[126,280,180,28]}
+{"kind":"shape","slide":13,"id":"22","role":"ellipse","shapeType":"ellipse","bbox":[132,332,20,20]}
+{"kind":"shape","slide":13,"id":"23","role":"rect","shapeType":"rect","bbox":[168,329,360,22]}
+{"kind":"textbox","slide":13,"id":"23","role":"text","text":"ESP32 音视频采集与设备端播放","textPreview":"ESP32 音视频采集与设备端播放","textChars":17,"textLines":1,"bbox":[168,329,360,22]}
+{"kind":"shape","slide":13,"id":"24","role":"ellipse","shapeType":"ellipse","bbox":[132,374,20,20]}
+{"kind":"shape","slide":13,"id":"25","role":"rect","shapeType":"rect","bbox":[168,371,360,22]}
+{"kind":"textbox","slide":13,"id":"25","role":"text","text":"Go 后端 UDP/HTTP/WebSocket 编排","textPreview":"Go 后端 UDP/HTTP/WebSocket 编排","textChars":27,"textLines":1,"bbox":[168,371,360,22]}
+{"kind":"shape","slide":13,"id":"26","role":"ellipse","shapeType":"ellipse","bbox":[132,416,20,20]}
+{"kind":"shape","slide":13,"id":"27","role":"rect","shapeType":"rect","bbox":[168,413,360,22]}
+{"kind":"textbox","slide":13,"id":"27","role":"text","text":"Python 视觉导航 worker 与多模式控制","textPreview":"Python 视觉导航 worker 与多模式控制","textChars":25,"textLines":1,"bbox":[168,413,360,22]}
+{"kind":"shape","slide":13,"id":"28","role":"ellipse","shapeType":"ellipse","bbox":[132,458,20,20]}
+{"kind":"shape","slide":13,"id":"29","role":"rect","shapeType":"rect","bbox":[168,455,360,22]}
+{"kind":"textbox","slide":13,"id":"29","role":"text","text":"Vue 实时控制台与部署文档","textPreview":"Vue 实时控制台与部署文档","textChars":14,"textLines":1,"bbox":[168,455,360,22]}
+{"kind":"shape","slide":13,"id":"30","role":"roundRect","shapeType":"roundRect","bbox":[686,248,500,300]}
+{"kind":"shape","slide":13,"id":"31","role":"rect","shapeType":"rect","bbox":[718,280,180,28]}
+{"kind":"textbox","slide":13,"id":"31","role":"text","text":"后续展望","textPreview":"后续展望","textChars":4,"textLines":1,"bbox":[718,280,180,28]}
+{"kind":"shape","slide":13,"id":"32","role":"ellipse","shapeType":"ellipse","bbox":[724,332,20,20]}
+{"kind":"shape","slide":13,"id":"33","role":"rect","shapeType":"rect","bbox":[760,329,360,22]}
+{"kind":"textbox","slide":13,"id":"33","role":"text","text":"增加 IMU / GPS / SLAM 辅助定位","textPreview":"增加 IMU / GPS / SLAM 辅助定位","textChars":24,"textLines":1,"bbox":[760,329,360,22]}
+{"kind":"shape","slide":13,"id":"34","role":"ellipse","shapeType":"ellipse","bbox":[724,374,20,20]}
+{"kind":"shape","slide":13,"id":"35","role":"rect","shapeType":"rect","bbox":[760,371,360,22]}
+{"kind":"textbox","slide":13,"id":"35","role":"text","text":"模型量化与边缘推理优化","textPreview":"模型量化与边缘推理优化","textChars":11,"textLines":1,"bbox":[760,371,360,22]}
+{"kind":"shape","slide":13,"id":"36","role":"ellipse","shapeType":"ellipse","bbox":[724,416,20,20]}
+{"kind":"shape","slide":13,"id":"37","role":"rect","shapeType":"rect","bbox":[760,413,360,22]}
+{"kind":"textbox","slide":13,"id":"37","role":"text","text":"扩展更多交通场景数据集","textPreview":"扩展更多交通场景数据集","textChars":11,"textLines":1,"bbox":[760,413,360,22]}
+{"kind":"shape","slide":13,"id":"38","role":"ellipse","shapeType":"ellipse","bbox":[724,458,20,20]}
+{"kind":"shape","slide":13,"id":"39","role":"rect","shapeType":"rect","bbox":[760,455,360,22]}
+{"kind":"textbox","slide":13,"id":"39","role":"text","text":"开展真实道路用户测试与安全评估","textPreview":"开展真实道路用户测试与安全评估","textChars":15,"textLines":1,"bbox":[760,455,360,22]}
+{"kind":"slide","slide":14,"id":"slide-14"}
+{"kind":"shape","slide":14,"id":"2","role":"rect","shapeType":"rect","bbox":[0,0,1280,720]}
+{"kind":"shape","slide":14,"id":"3","role":"ellipse","shapeType":"ellipse","bbox":[-120,480,360,360]}
+{"kind":"shape","slide":14,"id":"4","role":"ellipse","shapeType":"ellipse","bbox":[1030,-150,360,360]}
+{"kind":"shape","slide":14,"id":"5","role":"rect","shapeType":"rect","bbox":[438,192,404,88]}
+{"kind":"textbox","slide":14,"id":"5","role":"text","text":"Q&A","textPreview":"Q&A","textChars":3,"textLines":1,"bbox":[438,192,404,88]}
+{"kind":"shape","slide":14,"id":"6","role":"rect","shapeType":"rect","bbox":[370,306,540,34]}
+{"kind":"textbox","slide":14,"id":"6","role":"text","text":"谢谢各位老师，欢迎批评指正","textPreview":"谢谢各位老师，欢迎批评指正","textChars":13,"textLines":1,"bbox":[370,306,540,34]}
+{"kind":"shape","slide":14,"id":"7","role":"roundRect","shapeType":"roundRect","bbox":[346,420,150,48]}
+{"kind":"shape","slide":14,"id":"8","role":"rect","shapeType":"rect","bbox":[366,434,110,18]}
+{"kind":"textbox","slide":14,"id":"8","role":"text","text":"系统架构","textPreview":"系统架构","textChars":4,"textLines":1,"bbox":[366,434,110,18]}
+{"kind":"shape","slide":14,"id":"9","role":"roundRect","shapeType":"roundRect","bbox":[544,420,150,48]}
+{"kind":"shape","slide":14,"id":"10","role":"rect","shapeType":"rect","bbox":[564,434,110,18]}
+{"kind":"textbox","slide":14,"id":"10","role":"text","text":"算法实现","textPreview":"算法实现","textChars":4,"textLines":1,"bbox":[564,434,110,18]}
+{"kind":"shape","slide":14,"id":"11","role":"roundRect","shapeType":"roundRect","bbox":[742,420,150,48]}
+{"kind":"shape","slide":14,"id":"12","role":"rect","shapeType":"rect","bbox":[762,434,110,18]}
+{"kind":"textbox","slide":14,"id":"12","role":"text","text":"测试部署","textPreview":"测试部署","textChars":4,"textLines":1,"bbox":[762,434,110,18]}
+{"kind":"shape","slide":14,"id":"13","role":"rect","shapeType":"rect","bbox":[64,652,520,22]}
+{"kind":"textbox","slide":14,"id":"13","role":"text","text":"基于 ESP32 智能眼镜的视觉导航与语音交互系统","textPreview":"基于 ESP32 智能眼镜的视觉导航与语音交互系统","textChars":25,"textLines":1,"bbox":[64,652,520,22]}
+{"kind":"image","slide":2,"id":"41","role":"visual watermark","path":"C:\\Users\\lenovo\\Desktop\\毕设\\OpenAIglasses_for_Navigation\\bs\\esp32-glass-all\\esp32-glass-front\\src\\assets\\hero.png","bbox":[1124,615,58,48]}
+{"kind":"image","slide":3,"id":"44","role":"visual watermark","path":"C:\\Users\\lenovo\\Desktop\\毕设\\OpenAIglasses_for_Navigation\\bs\\esp32-glass-all\\esp32-glass-front\\src\\assets\\hero.png","bbox":[1124,615,58,48]}
+{"kind":"image","slide":4,"id":"42","role":"visual watermark","path":"C:\\Users\\lenovo\\Desktop\\毕设\\OpenAIglasses_for_Navigation\\bs\\esp32-glass-all\\esp32-glass-front\\src\\assets\\hero.png","bbox":[1124,615,58,48]}
+{"kind":"image","slide":5,"id":"56","role":"visual watermark","path":"C:\\Users\\lenovo\\Desktop\\毕设\\OpenAIglasses_for_Navigation\\bs\\esp32-glass-all\\esp32-glass-front\\src\\assets\\hero.png","bbox":[1124,615,58,48]}
+{"kind":"image","slide":6,"id":"50","role":"visual watermark","path":"C:\\Users\\lenovo\\Desktop\\毕设\\OpenAIglasses_for_Navigation\\bs\\esp32-glass-all\\esp32-glass-front\\src\\assets\\hero.png","bbox":[1124,615,58,48]}
+{"kind":"image","slide":7,"id":"51","role":"visual watermark","path":"C:\\Users\\lenovo\\Desktop\\毕设\\OpenAIglasses_for_Navigation\\bs\\esp32-glass-all\\esp32-glass-front\\src\\assets\\hero.png","bbox":[1124,615,58,48]}
+{"kind":"image","slide":8,"id":"52","role":"visual watermark","path":"C:\\Users\\lenovo\\Desktop\\毕设\\OpenAIglasses_for_Navigation\\bs\\esp32-glass-all\\esp32-glass-front\\src\\assets\\hero.png","bbox":[1124,615,58,48]}
+{"kind":"image","slide":9,"id":"54","role":"visual watermark","path":"C:\\Users\\lenovo\\Desktop\\毕设\\OpenAIglasses_for_Navigation\\bs\\esp32-glass-all\\esp32-glass-front\\src\\assets\\hero.png","bbox":[1124,615,58,48]}
+{"kind":"image","slide":10,"id":"46","role":"visual watermark","path":"C:\\Users\\lenovo\\Desktop\\毕设\\OpenAIglasses_for_Navigation\\bs\\esp32-glass-all\\esp32-glass-front\\src\\assets\\hero.png","bbox":[1124,615,58,48]}
+{"kind":"image","slide":11,"id":"36","role":"visual watermark","path":"C:\\Users\\lenovo\\Desktop\\毕设\\OpenAIglasses_for_Navigation\\bs\\esp32-glass-all\\esp32-glass-front\\src\\assets\\hero.png","bbox":[1124,615,58,48]}
+{"kind":"image","slide":12,"id":"46","role":"visual watermark","path":"C:\\Users\\lenovo\\Desktop\\毕设\\OpenAIglasses_for_Navigation\\bs\\esp32-glass-all\\esp32-glass-front\\src\\assets\\hero.png","bbox":[1124,615,58,48]}
+{"kind":"image","slide":13,"id":"40","role":"visual watermark","path":"C:\\Users\\lenovo\\Desktop\\毕设\\OpenAIglasses_for_Navigation\\bs\\esp32-glass-all\\esp32-glass-front\\src\\assets\\hero.png","bbox":[1124,615,58,48]}
+{"kind":"image","slide":14,"id":"14","role":"visual watermark","path":"C:\\Users\\lenovo\\Desktop\\毕设\\OpenAIglasses_for_Navigation\\bs\\esp32-glass-all\\esp32-glass-front\\src\\assets\\hero.png","bbox":[1124,615,58,48]}

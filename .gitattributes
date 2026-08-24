@@ -1,0 +1,5 @@
+/AIGlasses_for_navigation/3dmodel.obj filter=lfs diff=lfs merge=lfs -text
+/AIGlasses_for_navigation/shoppingbest5.pt filter=lfs diff=lfs merge=lfs -text
+/AIGlasses_for_navigation/trafficlight.pt filter=lfs diff=lfs merge=lfs -text
+/AIGlasses_for_navigation/yolo-seg.pt filter=lfs diff=lfs merge=lfs -text
+/python_worker/mobileclip_blt.ts filter=lfs diff=lfs merge=lfs -text

@@ -1,0 +1,852 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>XIAO ESP32S3 Sense Stream Monitor</title>
+  <style>
+    :root {
+      --bg: #efe7dc;
+      --panel: rgba(255, 252, 246, 0.9);
+      --ink: #16241e;
+      --muted: #5d6f68;
+      --accent: #006a58;
+      --accent-soft: rgba(0, 106, 88, 0.12);
+      --danger: #9f3a2c;
+      --danger-soft: rgba(159, 58, 44, 0.12);
+      --line: rgba(22, 36, 30, 0.1);
+      --shadow: 0 24px 60px rgba(28, 45, 37, 0.14);
+      --video-aspect-ratio: 4 / 3;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top left, rgba(0, 106, 88, 0.18), transparent 36%),
+        radial-gradient(circle at top right, rgba(235, 122, 51, 0.12), transparent 30%),
+        linear-gradient(180deg, #f7f0e5, var(--bg));
+    }
+
+    main {
+      width: min(1120px, calc(100% - 28px));
+      margin: 0 auto;
+      padding: 28px 0 40px;
+    }
+
+    .hero {
+      display: grid;
+      gap: 14px;
+      margin-bottom: 22px;
+    }
+
+    .eyebrow {
+      font-size: 12px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(30px, 5vw, 50px);
+      line-height: 0.96;
+      letter-spacing: -0.04em;
+      max-width: 12ch;
+    }
+
+    .summary {
+      max-width: 72ch;
+      color: var(--muted);
+      line-height: 1.7;
+      font-size: 15px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1.55fr 1fr;
+      gap: 18px;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      backdrop-filter: blur(12px);
+    }
+
+    .panel-body {
+      padding: 20px;
+    }
+
+    .panel h2 {
+      margin: 0 0 14px;
+      font-size: 16px;
+      letter-spacing: 0.02em;
+    }
+
+    .stream-shell {
+      aspect-ratio: var(--video-aspect-ratio);
+      position: relative;
+      display: grid;
+      place-items: center;
+      background:
+        linear-gradient(135deg, rgba(0, 106, 88, 0.14), rgba(22, 36, 30, 0.16)),
+        repeating-linear-gradient(
+          135deg,
+          rgba(255, 255, 255, 0.08) 0 18px,
+          rgba(255, 255, 255, 0.02) 18px 36px
+        );
+      border-bottom: 1px solid var(--line);
+    }
+
+    #videoFrame {
+      display: none;
+      width: auto;
+      height: auto;
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      image-rendering: auto;
+    }
+
+    .placeholder {
+      padding: 24px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.7;
+    }
+
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .meta-card {
+      padding: 14px;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.62);
+      border: 1px solid rgba(22, 36, 30, 0.08);
+    }
+
+    .meta-label {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .meta-value {
+      font-size: 20px;
+      font-weight: 600;
+    }
+
+    .stack {
+      display: grid;
+      gap: 18px;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .status-pill[data-state="offline"] {
+      background: var(--danger-soft);
+      color: var(--danger);
+    }
+
+    button {
+      appearance: none;
+      border: 0;
+      border-radius: 999px;
+      padding: 12px 18px;
+      font: inherit;
+      font-weight: 700;
+      color: white;
+      background: var(--ink);
+      cursor: pointer;
+      transition: transform 120ms ease, opacity 120ms ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+    }
+
+    button:disabled {
+      opacity: 0.55;
+      cursor: default;
+      transform: none;
+    }
+
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    button.secondary {
+      color: var(--ink);
+      background: rgba(22, 36, 30, 0.08);
+    }
+
+    button.secondary[data-enabled="true"] {
+      color: white;
+      background: var(--accent);
+    }
+
+    .note {
+      margin: 12px 0 0;
+      color: var(--muted);
+      line-height: 1.6;
+      font-size: 14px;
+    }
+
+    .mono {
+      margin: 10px 0 0;
+      font-family: "Cascadia Code", Consolas, monospace;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+      overflow-wrap: anywhere;
+    }
+
+    .transcript {
+      display: grid;
+      gap: 8px;
+      margin-top: 16px;
+      padding-top: 14px;
+      border-top: 1px solid var(--line);
+    }
+
+    .transcript-label {
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .transcript-line {
+      margin: 0;
+      min-height: 22px;
+      line-height: 1.7;
+      color: var(--ink);
+      overflow-wrap: anywhere;
+    }
+
+    @media (max-width: 900px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 640px) {
+      main {
+        width: min(100% - 20px, 720px);
+      }
+
+      .meta-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="hero">
+      <div class="eyebrow">XIAO ESP32S3 Sense + Go UDP Relay</div>
+      <h1>Live camera and mic stream monitor</h1>
+      <div class="summary">
+        This page receives JPEG video frames and PCM audio chunks from the Go relay server in real time.
+        The device now sends media to Go over UDP, while the browser still uses WebSocket for preview.
+        If the server is configured with DashScope Bailian credentials, it can also forward the live stream into a realtime multimodal model and play the model reply audio here.
+      </div>
+    </section>
+
+    <section class="grid">
+      <article class="panel">
+        <div class="stream-shell" id="streamShell">
+          <img id="videoFrame" alt="latest frame">
+          <div class="placeholder" id="placeholder">
+            Waiting for the first frame from the XIAO ESP32S3 Sense...
+          </div>
+        </div>
+        <div class="panel-body">
+          <h2>Video preview</h2>
+          <div class="meta-grid">
+            <div class="meta-card">
+              <span class="meta-label">Resolution</span>
+              <span class="meta-value" id="resolutionValue">-</span>
+            </div>
+            <div class="meta-card">
+              <span class="meta-label">Frame size</span>
+              <span class="meta-value" id="frameBytesValue">-</span>
+            </div>
+            <div class="meta-card">
+              <span class="meta-label">Video frames</span>
+              <span class="meta-value" id="videoCountValue">0</span>
+            </div>
+            <div class="meta-card">
+              <span class="meta-label">Audio chunks</span>
+              <span class="meta-value" id="audioCountValue">0</span>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <div class="stack">
+        <article class="panel">
+          <div class="panel-body">
+            <h2>Connection</h2>
+            <div class="status-pill" id="deviceStatus" data-state="offline">Device offline</div>
+            <p class="note" id="deviceIdentity">No device hello packet received yet.</p>
+            <p class="mono" id="serverEndpoint"></p>
+          </div>
+        </article>
+
+        <article class="panel">
+          <div class="panel-body">
+            <h2>Audio</h2>
+            <div class="button-row">
+              <button id="audioButton">Unlock audio</button>
+              <button id="monitorToggle" class="secondary" data-enabled="false" disabled>Monitor muted</button>
+              <button id="assistantToggle" class="secondary" data-enabled="true" disabled>AI voice on</button>
+            </div>
+            <p class="note" id="audioStatus">Browser audio is locked. After unlocking, the raw device monitor stays muted by default and only AI reply audio will play.</p>
+            <p class="mono" id="audioConfig">sampleRate=- channels=- bits=- gain=2.8x hp=70Hz lp=6200Hz agc=smooth</p>
+          </div>
+        </article>
+
+        <article class="panel">
+          <div class="panel-body">
+            <h2>AI Assistant</h2>
+            <div class="status-pill" id="aiStatus" data-state="offline">AI disabled</div>
+            <p class="note" id="aiNote">The server has not announced a Bailian realtime bridge yet. Usually this means `DASHSCOPE_API_KEY` is not configured.</p>
+            <p class="mono" id="aiConfig">model=- voice=- region=- search=off</p>
+            <div class="transcript">
+              <span class="transcript-label">User</span>
+              <p class="transcript-line" id="aiUserTranscript">-</p>
+              <span class="transcript-label">Assistant</span>
+              <p class="transcript-line" id="aiAssistantTranscript">-</p>
+            </div>
+          </div>
+        </article>
+
+        <article class="panel">
+          <div class="panel-body">
+            <h2>Endpoints</h2>
+            <p class="note">Useful when you want to embed the stream somewhere else.</p>
+            <p class="mono">GET /snapshot.jpg</p>
+            <p class="mono">GET /api/status</p>
+            <p class="mono">WS /ws/view</p>
+          </div>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const statusEl = document.getElementById("deviceStatus");
+    const identityEl = document.getElementById("deviceIdentity");
+    const endpointEl = document.getElementById("serverEndpoint");
+    const resolutionEl = document.getElementById("resolutionValue");
+    const frameBytesEl = document.getElementById("frameBytesValue");
+    const videoCountEl = document.getElementById("videoCountValue");
+    const audioCountEl = document.getElementById("audioCountValue");
+    const streamShellEl = document.getElementById("streamShell");
+    const videoEl = document.getElementById("videoFrame");
+    const placeholderEl = document.getElementById("placeholder");
+    const audioButton = document.getElementById("audioButton");
+    const monitorToggle = document.getElementById("monitorToggle");
+    const assistantToggle = document.getElementById("assistantToggle");
+    const audioStatusEl = document.getElementById("audioStatus");
+    const audioConfigEl = document.getElementById("audioConfig");
+    const aiStatusEl = document.getElementById("aiStatus");
+    const aiNoteEl = document.getElementById("aiNote");
+    const aiConfigEl = document.getElementById("aiConfig");
+    const aiUserTranscriptEl = document.getElementById("aiUserTranscript");
+    const aiAssistantTranscriptEl = document.getElementById("aiAssistantTranscript");
+
+    const wsScheme = location.protocol === "https:" ? "wss" : "ws";
+    const wsUrl = `${wsScheme}://${location.host}/ws/view`;
+    const browserGain = 2.8;
+    const maxRecoverableAudioGap = 4;
+    const audioFadeSamples = 24;
+    const monitorAudioState = {
+      nextTime: 0,
+      desiredLead: 0.18,
+    };
+    const assistantAudioState = {
+      nextTime: 0,
+      desiredLead: 0.08,
+    };
+
+    endpointEl.textContent = wsUrl;
+
+    let socket;
+    // 每个二进制 WebSocket 消息都对应它前面那条 JSON 元数据消息，
+    // 这个队列就是前端用来维持两者配对关系的。
+    const pendingMetas = [];
+    let currentFrameUrl = null;
+    let audioContext = null;
+    let monitorAudioBus = null;
+    let assistantAudioBus = null;
+    let deviceHello = null;
+    let lastAudioSeq = null;
+    let aiAssistantBuffer = "";
+    let currentAssistantResponseId = "";
+    let monitorAudioEnabled = false;
+    let assistantAudioEnabled = true;
+
+    function updateVideoAspectRatio(width, height) {
+      if (!width || !height) {
+        return;
+      }
+      streamShellEl.style.aspectRatio = `${width} / ${height}`;
+    }
+
+    function connect() {
+      socket = new WebSocket(wsUrl);
+      // 视频和音频载荷会在各自的 JSON 元数据之后，以原始字节形式到达。
+      socket.binaryType = "arraybuffer";
+
+      socket.addEventListener("open", () => {
+        audioStatusEl.textContent = "Viewer WebSocket connected. Waiting for audio chunks.";
+      });
+
+      socket.addEventListener("close", () => {
+        pendingMetas.length = 0;
+        monitorAudioState.nextTime = 0;
+        resetAssistantPlayback();
+        lastAudioSeq = null;
+        setOfflineState("Viewer disconnected. Reconnecting in 3 seconds.");
+        setTimeout(connect, 3000);
+      });
+
+      socket.addEventListener("message", event => {
+        if (typeof event.data === "string") {
+          handleControlMessage(event.data);
+          return;
+        }
+
+        if (pendingMetas.length === 0) {
+          return;
+        }
+
+        const pendingMeta = pendingMetas.shift();
+        if (pendingMeta.type === "video") {
+          renderVideoFrame(event.data, pendingMeta);
+        } else if (pendingMeta.type === "audio") {
+          playAudioChunk(event.data, pendingMeta);
+        } else if (pendingMeta.type === "ai_audio") {
+          playAssistantAudioChunk(event.data, pendingMeta);
+        }
+      });
+    }
+
+    function handleControlMessage(text) {
+      const message = JSON.parse(text);
+
+      if (message.type === "server_state") {
+        if (message.deviceConnected) {
+          setOnlineState();
+        } else {
+          setOfflineState("Server is online, but no device is streaming yet.");
+        }
+        videoCountEl.textContent = String(message.videoFramesSeen ?? 0);
+        audioCountEl.textContent = String(message.audioChunksSeen ?? 0);
+        if (message.latestVideoBytes) {
+          frameBytesEl.textContent = `${message.latestVideoBytes} B`;
+        }
+        return;
+      }
+
+      if (message.type === "hello") {
+        deviceHello = message;
+        setOnlineState();
+        identityEl.textContent = `${message.deviceId || "unknown"} / ${message.firmware || "unknown"}`;
+        resolutionEl.textContent = `${message.video?.width || "-"} x ${message.video?.height || "-"}`;
+        updateVideoAspectRatio(message.video?.width, message.video?.height);
+        audioConfigEl.textContent =
+          `sampleRate=${message.audio?.sampleRate || "-"} channels=${message.audio?.channels || "-"} bits=${message.audio?.bitsPerSample || "-"} gain=${browserGain}x hp=70Hz lp=6200Hz agc=smooth`;
+        return;
+      }
+
+      if (message.type === "ai_state") {
+        renderAIState(message);
+        return;
+      }
+
+      if (message.type === "ai_transcript") {
+        renderAITranscript(message);
+        return;
+      }
+
+      if (message.type === "ai_event") {
+        renderAIEvent(message);
+        return;
+      }
+
+      if (message.type === "video" || message.type === "audio" || message.type === "ai_audio") {
+        // 下一条二进制消息就属于这条元数据。
+        pendingMetas.push(message);
+      }
+    }
+
+    function setOnlineState() {
+      statusEl.textContent = "Device online";
+      statusEl.dataset.state = "online";
+    }
+
+    function setOfflineState(reason) {
+      statusEl.textContent = "Device offline";
+      statusEl.dataset.state = "offline";
+      if (!deviceHello) {
+        identityEl.textContent = reason;
+      }
+    }
+
+    function renderVideoFrame(buffer, meta) {
+      const blob = new Blob([buffer], { type: "image/jpeg" });
+      const url = URL.createObjectURL(blob);
+      // 释放上一帧的 blob URL，避免长时间预览时浏览器内存持续增长。
+      if (currentFrameUrl) {
+        URL.revokeObjectURL(currentFrameUrl);
+      }
+      currentFrameUrl = url;
+      videoEl.src = url;
+      videoEl.style.display = "block";
+      placeholderEl.style.display = "none";
+      frameBytesEl.textContent = `${meta.bytes} B`;
+      if (meta.width && meta.height) {
+        updateVideoAspectRatio(meta.width, meta.height);
+        resolutionEl.textContent = `${meta.width} x ${meta.height}`;
+      }
+    }
+
+    function createMonitorAudioBus() {
+      const gainNode = audioContext.createGain();
+      const highpassNode = audioContext.createBiquadFilter();
+      const lowpassNode = audioContext.createBiquadFilter();
+      const compressorNode = audioContext.createDynamicsCompressor();
+
+      gainNode.gain.value = monitorAudioEnabled ? browserGain : 0;
+      highpassNode.type = "highpass";
+      highpassNode.frequency.value = 70;
+      lowpassNode.type = "lowpass";
+      lowpassNode.frequency.value = 6200;
+
+      // 原始设备监听保留轻量滤波和压缩，方便排查采集链路。
+      compressorNode.threshold.value = -20;
+      compressorNode.knee.value = 20;
+      compressorNode.ratio.value = 3.5;
+      compressorNode.attack.value = 0.008;
+      compressorNode.release.value = 0.12;
+
+      gainNode.connect(highpassNode);
+      highpassNode.connect(lowpassNode);
+      lowpassNode.connect(compressorNode);
+      compressorNode.connect(audioContext.destination);
+
+      return { input: gainNode, gainNode };
+    }
+
+    function createAssistantAudioBus() {
+      const gainNode = audioContext.createGain();
+      const compressorNode = audioContext.createDynamicsCompressor();
+
+      gainNode.gain.value = assistantAudioEnabled ? 1 : 0;
+      compressorNode.threshold.value = -18;
+      compressorNode.knee.value = 12;
+      compressorNode.ratio.value = 2.4;
+      compressorNode.attack.value = 0.004;
+      compressorNode.release.value = 0.09;
+
+      gainNode.connect(compressorNode);
+      compressorNode.connect(audioContext.destination);
+
+      return { input: gainNode, gainNode };
+    }
+
+    function updateAudioControls() {
+      monitorToggle.disabled = !audioContext;
+      assistantToggle.disabled = !audioContext;
+      monitorToggle.dataset.enabled = String(monitorAudioEnabled);
+      assistantToggle.dataset.enabled = String(assistantAudioEnabled);
+      monitorToggle.textContent = monitorAudioEnabled ? "Monitor live" : "Monitor muted";
+      assistantToggle.textContent = assistantAudioEnabled ? "AI voice on" : "AI voice off";
+
+      if (monitorAudioBus) {
+        monitorAudioBus.gainNode.gain.value = monitorAudioEnabled ? browserGain : 0;
+      }
+      if (assistantAudioBus) {
+        assistantAudioBus.gainNode.gain.value = assistantAudioEnabled ? 1 : 0;
+      }
+    }
+
+    function resetAssistantPlayback(reason = "") {
+      assistantAudioState.nextTime = 0;
+
+      if (assistantAudioBus) {
+        try {
+          assistantAudioBus.input.disconnect();
+        } catch (_) {
+        }
+      }
+
+      if (audioContext) {
+        assistantAudioBus = createAssistantAudioBus();
+      }
+      updateAudioControls();
+
+      if (reason) {
+        audioStatusEl.textContent = reason;
+      }
+    }
+
+    function setCurrentAssistantResponse(responseId) {
+      currentAssistantResponseId = responseId || "";
+    }
+
+    async function ensureAudioContext() {
+      if (!audioContext) {
+        audioContext = new AudioContext();
+        monitorAudioBus = createMonitorAudioBus();
+        assistantAudioBus = createAssistantAudioBus();
+      }
+      if (audioContext.state !== "running") {
+        await audioContext.resume();
+      }
+      updateAudioControls();
+      audioStatusEl.textContent = "Audio unlocked. Raw monitor is muted by default; AI reply audio is enabled.";
+    }
+
+    function pcm16ToFloat32(samples) {
+      const channel = new Float32Array(samples.length);
+      for (let i = 0; i < samples.length; i += 1) {
+        channel[i] = Math.max(-1, Math.min(1, samples[i] / 32768));
+      }
+      return channel;
+    }
+
+    function applyChunkEnvelope(channel) {
+      const fadeSamples = Math.min(audioFadeSamples, Math.floor(channel.length / 8));
+      for (let i = 0; i < fadeSamples; i += 1) {
+        const gain = (i + 1) / (fadeSamples + 1);
+        channel[i] *= gain;
+        channel[channel.length - 1 - i] *= gain;
+      }
+    }
+
+    function scheduleAudioBuffer(audioBuffer, playbackState, audioBus) {
+      if (!audioBus) {
+        return;
+      }
+
+      const source = audioContext.createBufferSource();
+      source.buffer = audioBuffer;
+      source.connect(audioBus.input);
+
+      const now = audioContext.currentTime;
+      // 只在队列快要见底时补一个很小的前置缓冲。
+      // 已经排进 Web Audio 的 future source 没法安全“回退重排”，
+      // 否则会造成后来的音频和前面已排队的片段重叠，听起来像重复。
+      if (playbackState.nextTime < now + playbackState.desiredLead) {
+        playbackState.nextTime = now + playbackState.desiredLead;
+      }
+
+      source.start(playbackState.nextTime);
+      playbackState.nextTime += audioBuffer.duration;
+    }
+
+    function scheduleSilence(durationSeconds, sampleRate, playbackState, audioBus) {
+      if (durationSeconds <= 0) {
+        return;
+      }
+
+      const silenceSamples = Math.max(1, Math.round(durationSeconds * sampleRate));
+      const silenceBuffer = audioContext.createBuffer(1, silenceSamples, sampleRate);
+      scheduleAudioBuffer(silenceBuffer, playbackState, audioBus);
+    }
+
+    function playAudioChunk(buffer, meta) {
+      if (!audioContext || audioContext.state !== "running") {
+        audioStatusEl.textContent = `Audio chunk received (${meta.bytes} B). Click "Enable audio" once.`;
+        return;
+      }
+
+      const pcm = new Int16Array(buffer);
+      const sampleRate = meta.sampleRate || deviceHello?.audio?.sampleRate || 16000;
+      const channels = meta.channels || deviceHello?.audio?.channels || 1;
+
+      if (channels !== 1) {
+        audioStatusEl.textContent = "This demo page currently expects mono audio.";
+        return;
+      }
+
+      const seq = Number(meta.seq);
+      const chunkDuration = pcm.length / sampleRate;
+      if (!monitorAudioEnabled) {
+        lastAudioSeq = seq;
+        return;
+      }
+
+      if (lastAudioSeq !== null) {
+        const seqGap = seq - lastAudioSeq - 1;
+        if (seqGap > 0 && seqGap <= maxRecoverableAudioGap) {
+          // 小范围丢包时补一段静音，尽量保持音频时间轴连续，而不是后面整段都抖掉。
+          for (let i = 0; i < seqGap; i += 1) {
+            scheduleSilence(chunkDuration, sampleRate, monitorAudioState, monitorAudioBus);
+          }
+        } else if (seqGap < 0 || seqGap > maxRecoverableAudioGap) {
+          monitorAudioState.nextTime = 0;
+        }
+      }
+
+      const channel = pcm16ToFloat32(pcm);
+      applyChunkEnvelope(channel);
+
+      const audioBuffer = audioContext.createBuffer(1, channel.length, sampleRate);
+      audioBuffer.copyToChannel(channel, 0);
+      scheduleAudioBuffer(audioBuffer, monitorAudioState, monitorAudioBus);
+      lastAudioSeq = seq;
+
+      audioStatusEl.textContent = `Playing live audio. Latest chunk: ${meta.bytes} B at ${sampleRate} Hz.`;
+    }
+
+    function playAssistantAudioChunk(buffer, meta) {
+      if (!audioContext || audioContext.state !== "running") {
+        return;
+      }
+      if (!assistantAudioEnabled) {
+        return;
+      }
+      if (currentAssistantResponseId && meta.responseId && meta.responseId !== currentAssistantResponseId) {
+        return;
+      }
+      if (!currentAssistantResponseId && meta.responseId) {
+        setCurrentAssistantResponse(meta.responseId);
+      }
+
+      const pcm = new Int16Array(buffer);
+      const sampleRate = meta.sampleRate || 24000;
+      const channel = pcm16ToFloat32(pcm);
+      applyChunkEnvelope(channel);
+
+      const audioBuffer = audioContext.createBuffer(1, channel.length, sampleRate);
+      audioBuffer.copyToChannel(channel, 0);
+      scheduleAudioBuffer(audioBuffer, assistantAudioState, assistantAudioBus);
+    }
+
+    function renderAIState(message) {
+      if (!message.enabled) {
+        aiStatusEl.textContent = "AI disabled";
+        aiStatusEl.dataset.state = "offline";
+        aiNoteEl.textContent = "The server has not enabled the Bailian realtime bridge.";
+        aiConfigEl.textContent = "model=- voice=- region=- search=off";
+        return;
+      }
+
+      aiStatusEl.textContent = message.connected ? "AI connected" : "AI disconnected";
+      aiStatusEl.dataset.state = message.connected ? "online" : "offline";
+      aiConfigEl.textContent =
+        `model=${message.model || "-"} voice=${message.voice || "-"} region=${message.region || "-"} search=${message.searchEnabled ? "on" : "off"}`;
+
+      if (message.connected) {
+        aiNoteEl.textContent = "Go relay is forwarding the live device stream into Bailian realtime.";
+      } else if (message.lastError) {
+        aiNoteEl.textContent = `Bridge error: ${message.lastError}`;
+      } else {
+        aiNoteEl.textContent = "Bridge is configured and waiting to connect.";
+      }
+    }
+
+    function renderAIEvent(message) {
+      if (message.event === "input_audio_buffer.speech_started") {
+        setCurrentAssistantResponse("");
+        resetAssistantPlayback("User speech detected. Cleared any queued AI audio to avoid overlap.");
+        aiAssistantBuffer = "";
+        return;
+      }
+
+      if (message.event === "response.created") {
+        setCurrentAssistantResponse(message.responseId);
+        resetAssistantPlayback("Receiving a fresh AI reply.");
+        return;
+      }
+
+      if (message.event === "response.done" || message.event === "response.audio.done") {
+        if (!message.responseId || message.responseId === currentAssistantResponseId) {
+          setCurrentAssistantResponse("");
+        }
+        assistantAudioState.nextTime = Math.max(assistantAudioState.nextTime, audioContext?.currentTime || 0);
+      }
+    }
+
+    function renderAITranscript(message) {
+      if (message.role === "user") {
+        aiUserTranscriptEl.textContent = message.text || "-";
+        aiAssistantBuffer = "";
+        return;
+      }
+
+      if (message.role !== "assistant") {
+        return;
+      }
+
+      if (message.final) {
+        aiAssistantBuffer = "";
+        aiAssistantTranscriptEl.textContent = message.text || "-";
+        return;
+      }
+
+      aiAssistantBuffer += message.text || "";
+      aiAssistantTranscriptEl.textContent = aiAssistantBuffer || "-";
+    }
+
+    audioButton.addEventListener("click", async () => {
+      await ensureAudioContext();
+      audioButton.disabled = true;
+      audioButton.textContent = "Audio unlocked";
+    });
+
+    monitorToggle.addEventListener("click", () => {
+      monitorAudioEnabled = !monitorAudioEnabled;
+      updateAudioControls();
+      audioStatusEl.textContent = monitorAudioEnabled
+        ? "Raw device monitor audio is now live."
+        : "Raw device monitor audio muted. AI reply audio stays independent.";
+    });
+
+    assistantToggle.addEventListener("click", () => {
+      assistantAudioEnabled = !assistantAudioEnabled;
+      if (!assistantAudioEnabled) {
+        resetAssistantPlayback("AI reply audio muted.");
+      } else {
+        updateAudioControls();
+        audioStatusEl.textContent = "AI reply audio enabled.";
+      }
+    });
+
+    connect();
+  </script>
+</body>
+</html>
