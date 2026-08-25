@@ -349,7 +349,7 @@ def _announce_navigation_voice(text: str) -> None:
         return
 
     def _speak() -> None:
-        # 优先用 TTS 合成完整路线信息（总距离/预计时间/盲道覆盖率/障碍物等），
+        # 优先用 TTS 合成完整路线信息（路线状况/盲道覆盖情况/总距离/预计时间等），
         # 避免静态 wav 兜底时丢失路线详情。
         try:
             pcm = TtsClient().synthesize_pcm16_8k(message)

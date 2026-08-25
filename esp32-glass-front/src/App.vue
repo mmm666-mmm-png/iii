@@ -104,6 +104,7 @@
               :ai-audio-chunks-seen="aiAudioChunksSeen"
               :dashboard-error="dashboardError"
               :active-mode="activeWorkMode"
+              :voice-mode="voiceMode"
               @mode-change="switchWorkMode"
               @unlock-audio="unlockAudio"
               @toggle-assistant-audio="toggleAssistantAudio"
@@ -140,6 +141,8 @@ const initialHash = window.location.hash.replace('#', '')
 const savedWorkMode = window.localStorage.getItem('ai-glass-work-mode')
 const activePage = ref(['live', 'navigation', 'quality'].includes(initialHash) ? initialHash : 'live')
 const activeWorkMode = ref(['navigation', 'qa'].includes(savedWorkMode) ? savedWorkMode : 'qa')
+// 语音交互双模式：chat（千问聊天）/ navigation（高德导航），由 Go 后端 ai_state.voiceMode 同步。
+const voiceMode = ref('chat')
 pageItems.splice(1, 0, {
   key: 'navigation',
   label: '高德导航',
@@ -485,6 +488,9 @@ function connectLiveSocket() {
     }
     if (payload?.type === 'ai_state') {
       aiState.value = payload
+      if (payload.voiceMode === 'chat' || payload.voiceMode === 'navigation') {
+        voiceMode.value = payload.voiceMode
+      }
       syncWorkModeFromState({ ai: payload })
       return
     }

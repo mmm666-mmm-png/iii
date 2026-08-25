@@ -314,6 +314,12 @@ type server struct {
 	// publishMu 保证发给浏览器的顺序始终是“JSON 元数据在前，二进制载荷在后”，
 	// 前端就是靠这个顺序把视频帧和音频块配对起来的。
 	publishMu sync.Mutex
+	// voiceMode 区分语音交互当前处于哪种模式：
+	//   chat        —— 自由文本交给 Qwen Omni 聊天；
+	//   navigation  —— 自由文本交给高德路线规划。
+	// 用户可用语音口令（“聊天”/“导航模式”）自由切换，两种模式互不干扰。
+	voiceModeMu sync.RWMutex
+	voiceMode   string
 }
 
 func newServer(deviceToken, allowOrigin string) *server {
@@ -324,6 +330,7 @@ func newServer(deviceToken, allowOrigin string) *server {
 		allowOrigin:      allowOrigin,
 		stats:            newStreamStatsTracker(),
 		devicePlaybackCh: make(chan devicePlaybackChunk, 256),
+		voiceMode:        "chat",
 		upgrader: websocket.Upgrader{
 			CheckOrigin: func(r *http.Request) bool { return true },
 		},
@@ -644,6 +651,24 @@ func (s *server) setAIInputPaused(paused bool) {
 	if s.ai != nil {
 		s.ai.setInputPaused(paused)
 	}
+}
+
+func (s *server) getVoiceMode() string {
+	s.voiceModeMu.RLock()
+	defer s.voiceModeMu.RUnlock()
+	if s.voiceMode == "" {
+		return "chat"
+	}
+	return s.voiceMode
+}
+
+func (s *server) setVoiceMode(mode string) {
+	if mode != "chat" && mode != "navigation" {
+		return
+	}
+	s.voiceModeMu.Lock()
+	s.voiceMode = mode
+	s.voiceModeMu.Unlock()
 }
 
 func normalizeVisionCommand(command string) string {

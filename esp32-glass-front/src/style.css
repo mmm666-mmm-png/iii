@@ -566,6 +566,65 @@ select {
   color: #0f5dbd;
 }
 
+.voice-mode-panel {
+  margin-top: 12px;
+}
+
+.voice-mode-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.voice-mode-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  column-gap: 10px;
+  row-gap: 2px;
+  min-height: 72px;
+  padding: 10px 12px;
+  border: 1px solid #e1e9f2;
+  border-radius: 8px;
+  background: #fbfcfe;
+  color: rgba(17, 24, 39, 0.72);
+  transition: border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
+}
+
+.voice-mode-card .mode-choice-icon {
+  grid-row: 1 / span 2;
+  align-self: center;
+  color: #1677ff;
+  font-size: 20px;
+}
+
+.voice-mode-card strong {
+  min-width: 0;
+  font-size: 14px;
+  line-height: 1.25;
+  font-weight: 750;
+}
+
+.voice-mode-card small {
+  min-width: 0;
+  color: rgba(17, 24, 39, 0.48);
+  font-size: 12px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.voice-mode-card-active {
+  border-color: #1677ff;
+  background: #eef6ff;
+  box-shadow: inset 0 0 0 1px rgba(22, 119, 255, 0.18);
+}
+
+.voice-mode-card-active .mode-choice-icon,
+.voice-mode-card-active strong {
+  color: #0f5dbd;
+}
+
 .navigation-console {
   border-color: #cfe2ff;
   background: #f8fbff;

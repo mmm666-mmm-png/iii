@@ -47,6 +47,7 @@ type aiStateMessage struct {
 	Connected     bool              `json:"connected"`
 	Mode          string            `json:"mode,omitempty"`
 	InputPaused   bool              `json:"inputPaused"`
+	VoiceMode     string            `json:"voiceMode,omitempty"`
 	Model         string            `json:"model,omitempty"`
 	Voice         string            `json:"voice,omitempty"`
 	Region        string            `json:"region,omitempty"`
@@ -160,6 +161,9 @@ func (b *dashScopeBridge) snapshot() aiStateMessage {
 		message.Mode = "navigation"
 	} else {
 		message.Mode = "qa"
+	}
+	if b.server != nil {
+		message.VoiceMode = b.server.getVoiceMode()
 	}
 	if !b.lastEventAt.IsZero() {
 		message.LastEventAt = b.lastEventAt.Format(time.RFC3339)

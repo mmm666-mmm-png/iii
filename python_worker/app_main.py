@@ -219,6 +219,36 @@ last_vision_result: Dict[str, Any] = {
 omni_conversation_active = False  # 标记omni对话是否正在进行
 omni_previous_nav_state = None  # 保存omni激活前的导航状态，用于恢复
 
+# 【新增】模型后台预热：把首次推理放到后台线程，避免 CPU 上 warmup 阻塞启动。
+def _start_background_warmup():
+    """后台预热模型；可用环境变量 AIGLASS_SKIP_MODEL_WARMUP=1 关闭。"""
+    if os.getenv("AIGLASS_SKIP_MODEL_WARMUP", "0") == "1":
+        return
+
+    def _warmup():
+        if yolo_seg_model is not None:
+            try:
+                test_img = np.zeros((640, 640, 3), dtype=np.uint8)
+                _ = yolo_seg_model.predict(
+                    test_img,
+                    device="cuda" if torch.cuda.is_available() else "cpu",
+                    verbose=False,
+                )
+                print("[NAVIGATION] 盲道分割模型后台预热完成")
+            except Exception as e:
+                print(f"[NAVIGATION] 盲道模型预热失败: {e}")
+        if obstacle_detector is not None:
+            try:
+                test_img = np.zeros((640, 640, 3), dtype=np.uint8)
+                cv2.rectangle(test_img, (200, 200), (400, 400), (255, 255, 255), -1)
+                _ = obstacle_detector.detect(test_img)
+                print("[NAVIGATION] YOLO-E 障碍物模型后台预热完成")
+            except Exception as e:
+                print(f"[NAVIGATION] YOLO-E 障碍物模型预热失败: {e}")
+
+    threading.Thread(target=_warmup, daemon=True).start()
+
+
 # 【新增】模型加载函数
 def load_navigation_models():
     """
@@ -246,19 +276,7 @@ def load_navigation_models():
             else:
                 print("[NAVIGATION] CUDA不可用，模型仍在CPU")
 
-            # 测试模型是否能正常运行
-            try:
-                test_img = np.zeros((640, 640, 3), dtype=np.uint8)
-                results = yolo_seg_model.predict(
-                    test_img,
-                    device="cuda" if torch.cuda.is_available() else "cpu",
-                    verbose=False
-                )
-                print(f"[NAVIGATION] 模型测试成功，支持的类别数: {len(yolo_seg_model.names) if hasattr(yolo_seg_model, 'names') else '未知'}")
-                if hasattr(yolo_seg_model, 'names'):
-                    print(f"[NAVIGATION] 模型类别: {yolo_seg_model.names}")
-            except Exception as e:
-                print(f"[NAVIGATION] 模型测试失败: {e}")
+            # 首次推理已移至后台预热，避免 CPU 上 warmup 阻塞启动。
         else:
             print(f"[NAVIGATION] 错误：找不到模型文件: {seg_model_path}")
             print(f"[NAVIGATION] 当前工作目录: {os.getcwd()}")
@@ -296,29 +314,7 @@ def load_navigation_models():
                 else:
                     print(f"[NAVIGATION] 警告：YOLO-E 文本特征未预计算")
                 
-                # 测试障碍物检测功能
-                print(f"[NAVIGATION] 开始测试 YOLO-E 检测功能...")
-                try:
-                    test_img = np.zeros((640, 640, 3), dtype=np.uint8)
-                    # 在测试图像中画一个白色矩形，模拟一个物体
-                    cv2.rectangle(test_img, (200, 200), (400, 400), (255, 255, 255), -1)
-                    
-                    # 测试检测（不提供 path_mask）
-                    test_results = obstacle_detector.detect(test_img)
-                    print(f"[NAVIGATION] YOLO-E 检测测试成功!")
-                    print(f"[NAVIGATION] 测试检测结果数: {len(test_results)}")
-                    
-                    if len(test_results) > 0:
-                        print(f"[NAVIGATION] 测试检测到的物体:")
-                        for i, obj in enumerate(test_results):
-                            print(f"  - 物体 {i+1}: {obj.get('name', 'unknown')}, "
-                                  f"面积比例: {obj.get('area_ratio', 0):.3f}, "
-                                  f"位置: ({obj.get('center_x', 0):.0f}, {obj.get('center_y', 0):.0f})")
-                except Exception as e:
-                    print(f"[NAVIGATION] YOLO-E 检测测试失败: {e}")
-                    import traceback
-                    traceback.print_exc()
-                
+                # 首次推理已移至后台预热，避免 CPU 上 warmup 阻塞启动。
                 print(f"[NAVIGATION] ========== YOLO-E 障碍物检测器加载完成 ==========")
                 
             except Exception as e:
@@ -333,6 +329,9 @@ def load_navigation_models():
         print(f"[NAVIGATION] 模型加载失败: {e}")
         import traceback
         traceback.print_exc()
+
+    # 模型加载完成后，在后台线程做首次推理预热，不阻塞服务启动。
+    _start_background_warmup()
 
 # 在程序启动时加载模型
 print("[NAVIGATION] 开始加载导航模型...")

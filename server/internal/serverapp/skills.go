@@ -72,6 +72,10 @@ func newSkillRegistry(server *server) *skillRegistry {
 	registry.register(visionControlSkill(server, "stop_navigation", "停止导航", "停止当前导航或视觉辅助模式。", "stop", false))
 	registry.register(visionControlSkill(server, "find_object", "物品查找", "根据目标名称启动物品查找模式。", "find_object", true))
 	registry.register(visionStatusSkill(server))
+	// 语音交互双模式：千问聊天 ↔ 高德导航，二者分开调用、可语音自由切换。
+	registry.register(switchToChatSkill(server))
+	registry.register(switchToNavigationSkill(server))
+	registry.register(navigationRouteSkill(server))
 	return registry
 }
 
@@ -186,6 +190,20 @@ func (r *skillRegistry) matchIntent(text string) (skillIntent, bool) {
 		}, true
 	}
 
+	// 语音交互模式切换（“聊天”↔“高德导航”）。先于视觉命令，避免“路线导航”等词被路线意图误判。
+	if containsAny(normalized, []string{"聊天", "聊天模式", "语音聊天", "退出导航", "不导航", "回到聊天"}) {
+		return skillIntent{Name: "switch_to_chat", Args: map[string]any{}}, true
+	}
+	if containsAny(normalized, []string{"导航模式", "高德导航", "路线导航", "进入导航", "切换导航"}) {
+		return skillIntent{Name: "switch_to_navigation", Args: map[string]any{}}, true
+	}
+
+	// 高德路线规划意图（带目的地/起点终点），先于视觉盲道导航，
+	// 避免“帮我导航到东湖公园”被误判为视觉“开始导航”。
+	if hasNavigationRouteIntent(normalized) {
+		return skillIntent{Name: "navigation_route", Args: map[string]any{"text": trimmed}}, true
+	}
+
 	if containsAny(normalized, []string{"开始导航", "盲道导航", "帮我导航"}) {
 		return skillIntent{Name: "start_blind_navigation", Args: map[string]any{}}, true
 	}
@@ -206,6 +224,15 @@ func (r *skillRegistry) matchIntent(text string) (skillIntent, bool) {
 	}
 
 	return skillIntent{}, false
+}
+
+// hasNavigationRouteIntent 判断文本是否表达“规划一条高德步行路线”的意图，
+// 与视觉盲道导航（“开始导航/盲道导航”）区分开：这里针对的是“导航到/去某地/怎么走”。
+func hasNavigationRouteIntent(normalized string) bool {
+	if strings.HasPrefix(normalized, "去") {
+		return true
+	}
+	return containsAny(normalized, []string{"导航到", "导航去", "怎么走", "怎么去", "前往", "带我去", "带路", "帮我导航到", "帮我导航去"})
 }
 
 func currentTimeSkill() skillDefinition {
@@ -383,6 +410,83 @@ func visionStatusSkill(server *server) skillDefinition {
 				summary += " 最近错误：" + state.LastError + "。"
 			}
 			return state, summary, nil
+		},
+	}
+}
+
+func switchToChatSkill(server *server) skillDefinition {
+	return skillDefinition{
+		Name:        "switch_to_chat",
+		DisplayName: "语音聊天",
+		Description: "切换到千问语音聊天模式，之后的语音由 Qwen Omni 回答。",
+		Parameters: map[string]any{
+			"type":       "object",
+			"properties": map[string]any{},
+		},
+		Handler: func(ctx context.Context, args json.RawMessage) (any, string, error) {
+			if server == nil {
+				return nil, "", fmt.Errorf("server is not configured")
+			}
+			server.setVoiceMode("chat")
+			server.setAIInputPaused(false)
+			return map[string]any{"voiceMode": "chat"}, "已切换到语音聊天模式，您可以和我聊天或提问。", nil
+		},
+	}
+}
+
+func switchToNavigationSkill(server *server) skillDefinition {
+	return skillDefinition{
+		Name:        "switch_to_navigation",
+		DisplayName: "高德导航模式",
+		Description: "切换到高德导航模式，之后的语音将用于路线规划。",
+		Parameters: map[string]any{
+			"type":       "object",
+			"properties": map[string]any{},
+		},
+		Handler: func(ctx context.Context, args json.RawMessage) (any, string, error) {
+			if server == nil {
+				return nil, "", fmt.Errorf("server is not configured")
+			}
+			server.setVoiceMode("navigation")
+			return map[string]any{"voiceMode": "navigation"}, "已切换到高德导航模式，请告诉我出发地和目的地。", nil
+		},
+	}
+}
+
+func navigationRouteSkill(server *server) skillDefinition {
+	return skillDefinition{
+		Name:        "navigation_route",
+		DisplayName: "高德路线规划",
+		Description: "解析导航口令并规划高德步行路线，播报路线信息。",
+		Parameters: map[string]any{
+			"type":     "object",
+			"required": []string{"text"},
+			"properties": map[string]any{
+				"text": map[string]any{
+					"type":        "string",
+					"description": "完整导航口令，例如“从枣庄学院去万达广场”。",
+				},
+			},
+		},
+		Handler: func(ctx context.Context, args json.RawMessage) (any, string, error) {
+			var payload struct {
+				Text string `json:"text"`
+			}
+			if err := json.Unmarshal(args, &payload); err != nil {
+				return nil, "", err
+			}
+			text := strings.TrimSpace(payload.Text)
+			if text == "" {
+				return nil, "", fmt.Errorf("导航口令不能为空")
+			}
+			// 高德 geocode / 路线规划较耗时，使用独立超时上下文，不受技能 8 秒超时限制。
+			navCtx, cancel := context.WithTimeout(context.Background(), navigationRequestTimeout)
+			defer cancel()
+			result, summary, err := server.callNavigationVoice(navCtx, text)
+			if err != nil {
+				return nil, fmt.Sprintf("高德导航失败：%s。", err.Error()), err
+			}
+			return result, summary, nil
 		},
 	}
 }
@@ -680,7 +784,18 @@ func (s *server) skillIntentFromTranscript(text string) (skillIntent, bool) {
 	if s.skills == nil {
 		return skillIntent{}, false
 	}
-	return s.skills.matchIntent(text)
+	if intent, ok := s.skills.matchIntent(text); ok {
+		return intent, true
+	}
+	// 高德导航模式下，未命中技能的普通语音也当作导航口令处理，
+	// 这样用户切到导航模式后可以说“东湖公园”之类的简短目的地。
+	if s.getVoiceMode() == "navigation" {
+		trimmed := strings.TrimSpace(text)
+		if trimmed != "" {
+			return skillIntent{Name: "navigation_route", Args: map[string]any{"text": trimmed}}, true
+		}
+	}
+	return skillIntent{}, false
 }
 
 func (s *server) maybeRunSkillFromTranscript(text, responseID string) bool {

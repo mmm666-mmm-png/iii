@@ -12,6 +12,9 @@
         <a-tag :color="activeMode === 'navigation' ? 'processing' : 'success'">
           {{ activeModeLabel }}
         </a-tag>
+        <a-tag :color="voiceModeTagColor">
+          {{ voiceModeLabel }}
+        </a-tag>
         <a-tag :color="aiTagColor">AI {{ aiStateLabel }}</a-tag>
       </a-space>
     </div>
@@ -113,6 +116,28 @@
               <span>回答问题</span>
               <small>实时转写、AI 回复和语音播放</small>
             </button>
+          </div>
+        </div>
+
+        <div v-if="showModeSelector" class="mode-switch-panel voice-mode-panel">
+          <div class="mode-switch-head">
+            <div>
+              <strong>语音交互</strong>
+              <span>语音说“聊天”或“导航模式”自由切换，两者互不干扰。</span>
+            </div>
+            <a-tag :color="voiceModeTagColor">{{ voiceModeLabel }}</a-tag>
+          </div>
+          <div class="voice-mode-grid">
+            <div class="voice-mode-card" :class="{ 'voice-mode-card-active': voiceMode === 'chat' }">
+              <MessageOutlined class="mode-choice-icon" />
+              <strong>千问聊天</strong>
+              <small>语音交给 Qwen Omni 多模态问答</small>
+            </div>
+            <div class="voice-mode-card" :class="{ 'voice-mode-card-active': voiceMode === 'navigation' }">
+              <EnvironmentOutlined class="mode-choice-icon" />
+              <strong>高德导航</strong>
+              <small>语音交给高德路线规划并逐段播报</small>
+            </div>
           </div>
         </div>
 
@@ -505,6 +530,10 @@ const props = defineProps({
     type: String,
     default: 'qa',
   },
+  voiceMode: {
+    type: String,
+    default: 'chat',
+  },
 })
 
 const emit = defineEmits(['unlock-audio', 'toggle-assistant-audio', 'vision-command', 'mode-change', 'record-transcript'])
@@ -676,6 +705,10 @@ const aiStateLabel = computed(() => {
 })
 
 const activeModeLabel = computed(() => props.activeMode === 'navigation' ? '导盲模式' : '回答问题')
+
+const voiceModeLabel = computed(() => (props.voiceMode === 'navigation' ? '高德导航' : '千问聊天'))
+
+const voiceModeTagColor = computed(() => (props.voiceMode === 'navigation' ? 'processing' : 'success'))
 
 const aiModelLabel = computed(() => {
   if (!props.aiState?.enabled) {
