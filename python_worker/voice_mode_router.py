@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+cd# -*- coding: utf-8 -*-
 """
 voice_mode_router.py — 语音模式路由器（千问聊天 ⇄ 高德导航）
 

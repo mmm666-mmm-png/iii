@@ -52,6 +52,12 @@ type visionControlRequest struct {
 	Target  string `json:"target,omitempty"`
 }
 
+type gpsUpdateRequest struct {
+	Lat      float64 `json:"lat"`
+	Lng      float64 `json:"lng"`
+	Accuracy float64 `json:"accuracy,omitempty"`
+}
+
 type visionWorkerResponse struct {
 	// 与 python_worker/app_main.py 的 /api/vision/* 响应字段保持一致。
 	OK                   bool   `json:"ok"`
@@ -170,6 +176,29 @@ func (v *visionWorker) control(ctx context.Context, command, target string) (vis
 	})
 	v.server.broadcastJSON(v.snapshot())
 	return response, nil
+}
+
+func (v *visionWorker) gpsUpdate(lat, lng, accuracy float64) {
+	// 手机定位经纬度 fire-and-forget 转发给 Python worker 做路段匹配。
+	if v == nil {
+		return
+	}
+	payload, _ := json.Marshal(gpsUpdateRequest{Lat: lat, Lng: lng, Accuracy: accuracy})
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	request, err := http.NewRequestWithContext(ctx, http.MethodPost, v.endpoint("/api/gps/update"), bytes.NewReader(payload))
+	if err != nil {
+		return
+	}
+	request.Header.Set("Content-Type", "application/json")
+	response, err := v.client.Do(request)
+	if err != nil {
+		log.Printf("gps update failed: %v", err)
+		return
+	}
+	defer response.Body.Close()
+	io.Copy(io.Discard, io.LimitReader(response.Body, 1<<10))
 }
 
 func (v *visionWorker) ingestFrame(meta *PacketMeta, payload []byte) {

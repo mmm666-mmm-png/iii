@@ -1,120 +1,102 @@
 <template>
   <a-config-provider :theme="themeConfig">
-    <a-layout class="app-layout">
-      <a-layout-content class="app-content">
-        <div class="page-shell page-two-column">
-          <aside class="sidebar-column">
-            <section class="surface-panel sidebar-brand-panel">
-              <div class="sidebar-brand-mark">AI GLASS</div>
-              <h1>智能眼镜控制台</h1>
-              <p>把实时画面、转写和导盲/问答模式放在同一个工作台，链路诊断独立查看。</p>
-
-              <div class="sidebar-status-grid">
-                <div class="sidebar-status-item">
-                  <span>设备</span>
-                  <strong>{{ liveState?.deviceConnected ? '在线' : '等待连接' }}</strong>
-                </div>
-                <div class="sidebar-status-item">
-                  <span>AI</span>
-                  <strong>{{ aiStatusText }}</strong>
-                </div>
-                <div class="sidebar-status-item">
-                  <span>视觉</span>
-                  <strong>{{ visionStatusText }}</strong>
-                </div>
-                <div class="sidebar-status-item">
-                  <span>同步</span>
-                  <strong>{{ sidebarSyncText }}</strong>
-                </div>
-              </div>
-            </section>
-
-            <nav class="surface-panel app-nav-panel" aria-label="功能页面">
-              <button
-                v-for="item in pageItems"
-                :key="item.key"
-                type="button"
-                class="app-nav-button"
-                :class="{ 'app-nav-button-active': activePage === item.key }"
-                @click="setPage(item.key)"
-              >
-                <span>{{ item.label }}</span>
-                <small>{{ item.description }}</small>
-              </button>
-            </nav>
-
-            <section class="surface-panel sidebar-mini-panel">
-              <div class="surface-head sidebar-mini-head">
-                <div>
-                  <h2>实时摘要</h2>
-                  <p>不会清空旧数据的无感刷新。</p>
-                </div>
-                <a-tag :color="backgroundRefreshing ? 'processing' : 'default'">
-                  {{ backgroundRefreshing ? '同步中' : '静默' }}
-                </a-tag>
-              </div>
-              <div class="sidebar-mini-grid">
-                <div>
-                  <span>视频帧</span>
-                  <strong>{{ liveState?.videoFramesSeen ?? 0 }}</strong>
-                </div>
-                <div>
-                  <span>音频块</span>
-                  <strong>{{ liveState?.audioChunksSeen ?? 0 }}</strong>
-                </div>
-                <div>
-                  <span>FPS</span>
-                  <strong>{{ numberValue(liveState?.quality?.videoFps, 1) }}</strong>
-                </div>
-                <div>
-                  <span>链路缺口</span>
-                  <strong>{{ qualityGapCount }}</strong>
-                </div>
-              </div>
-            </section>
-          </aside>
-
-          <main class="main-column">
-            <AdminHeader
-              :live-state="liveState"
-              :ai-state="aiState"
-              :vision-state="effectiveVisionState"
-              :refreshing="refreshing"
-              :background-refreshing="backgroundRefreshing"
-              :last-synced-at="lastSyncedAt"
-              :active-page-label="activePageMeta.label"
-              @refresh="refreshStatus({ manual: true })"
-            />
-
-            <LivePulseCard
-              :page="activePage"
-              :live-state="liveState"
-              :ai-state="aiState"
-              :vision-state="effectiveVisionState"
-              :stream-quality="liveState?.quality"
-              :snapshot-src="liveSnapshotSrc"
-              :snapshot-rotated="shouldRotateSnapshot"
-              :live-transcripts="liveTranscripts"
-              :skill-events="liveSkillEvents"
-              :vision-events="liveVisionEvents"
-              :backend-http-base="backendHttpBase"
-              :audio-unlocked="audioUnlocked"
-              :assistant-audio-enabled="assistantAudioEnabled"
-              :audio-status="audioStatus"
-              :ai-audio-chunks-seen="aiAudioChunksSeen"
-              :dashboard-error="dashboardError"
-              :active-mode="activeWorkMode"
-              :voice-mode="voiceMode"
-              @mode-change="switchWorkMode"
-              @unlock-audio="unlockAudio"
-              @toggle-assistant-audio="toggleAssistantAudio"
-              @vision-command="sendVisionCommand"
-              @record-transcript="recordLiveTranscript"
-            />
-          </main>
+    <div class="glass-shell">
+      <aside class="glass-sidebar">
+        <div class="glass-brand">
+          <div class="glass-brand-mark">AI GLASS</div>
+          <h1>智能导盲眼镜控制台</h1>
+          <p>实时画面 · 导盲导航 · 语音问答</p>
         </div>
-      </a-layout-content>
-    </a-layout>
+
+        <nav class="glass-nav" aria-label="功能页面">
+          <button
+            v-for="item in pageItems"
+            :key="item.key"
+            type="button"
+            class="glass-nav-button"
+            :class="{ 'glass-nav-button-active': activePage === item.key }"
+            @click="setPage(item.key)"
+          >
+            <span>{{ item.label }}</span>
+            <small>{{ item.description }}</small>
+          </button>
+        </nav>
+
+        <div class="glass-status">
+          <div class="glass-status-item">
+            <span>设备连接</span>
+            <strong :class="{ 'is-live': liveState?.deviceConnected }">{{ liveState?.deviceConnected ? '在线' : '等待连接' }}</strong>
+          </div>
+          <div class="glass-status-item">
+            <span>AI 服务</span>
+            <strong>{{ aiStatusText }}</strong>
+          </div>
+          <div class="glass-status-item">
+            <span>视觉算法</span>
+            <strong>{{ visionStatusText }}</strong>
+          </div>
+          <div class="glass-status-item">
+            <span>数据同步</span>
+            <strong>{{ sidebarSyncText }}</strong>
+          </div>
+        </div>
+
+        <div class="glass-device">
+          <div class="glass-device-row">
+            <span>设备编号</span>
+            <strong>{{ deviceIdText }}</strong>
+          </div>
+          <div class="glass-device-row">
+            <span>固件版本</span>
+            <strong>{{ firmwareText }}</strong>
+          </div>
+        </div>
+      </aside>
+
+      <main class="glass-main">
+        <AdminHeader
+          :live-state="liveState"
+          :ai-state="aiState"
+          :vision-state="effectiveVisionState"
+          :refreshing="refreshing"
+          :background-refreshing="backgroundRefreshing"
+          :last-synced-at="lastSyncedAt"
+          :active-page-label="activePageMeta.label"
+          @refresh="refreshStatus({ manual: true })"
+        />
+
+        <LivePulseCard
+          :page="activePage"
+          :live-state="liveState"
+          :ai-state="aiState"
+          :vision-state="effectiveVisionState"
+          :stream-quality="liveState?.quality"
+          :snapshot-src="liveSnapshotSrc"
+          :snapshot-rotated="shouldRotateSnapshot"
+          :live-transcripts="liveTranscripts"
+          :skill-events="liveSkillEvents"
+          :vision-events="liveVisionEvents"
+          :backend-http-base="backendHttpBase"
+          :audio-unlocked="audioUnlocked"
+          :assistant-audio-enabled="assistantAudioEnabled"
+          :audio-status="audioStatus"
+          :ai-audio-chunks-seen="aiAudioChunksSeen"
+          :dashboard-error="dashboardError"
+          :active-mode="activeWorkMode"
+          :voice-mode="voiceMode"
+          :gps-enabled="gpsEnabled"
+          :gps-status="gpsStatus"
+          :gps-fix="gpsFix"
+          @mode-change="switchWorkMode"
+          @unlock-audio="unlockAudio"
+          @toggle-assistant-audio="toggleAssistantAudio"
+          @vision-command="sendVisionCommand"
+          @record-transcript="recordLiveTranscript"
+          @toggle-gps="toggleGpsTracking"
+          @navigate="setPage"
+        />
+      </main>
+    </div>
   </a-config-provider>
 </template>
 
@@ -131,23 +113,20 @@ const configuredBackendOrigin = (import.meta.env.VITE_BACKEND_ORIGIN || '').trim
 // 留空时使用当前页面同源；开发环境通常由 Vite proxy 转发到 Go 后端。
 const backendHttpBase = configuredBackendOrigin || ''
 
-// 当前只保留实时页和链路诊断页，页面状态同步到 hash，便于刷新后保持位置。
+// 四个页面：实时导航、障碍物管理、链路诊断、系统设置；hash 同步便于刷新保持位置。
 const pageItems = [
-  { key: 'live', label: '实时交互', description: '画面、转写、导盲/问答' },
+  { key: 'live', label: '实时导航', description: '画面、转写、导盲/问答' },
+  { key: 'navigation', label: '障碍物管理', description: '盲道、过马路、红绿灯、找物品' },
   { key: 'quality', label: '链路诊断', description: 'FPS、丢包、分片质量' },
+  { key: 'ai', label: '系统设置', description: 'AI 语音、技能与服务信息' },
 ]
 
 const initialHash = window.location.hash.replace('#', '')
 const savedWorkMode = window.localStorage.getItem('ai-glass-work-mode')
-const activePage = ref(['live', 'navigation', 'quality'].includes(initialHash) ? initialHash : 'live')
+const activePage = ref(pageItems.some((item) => item.key === initialHash) ? initialHash : 'live')
 const activeWorkMode = ref(['navigation', 'qa'].includes(savedWorkMode) ? savedWorkMode : 'qa')
 // 语音交互双模式：chat（千问聊天）/ navigation（高德导航），由 Go 后端 ai_state.voiceMode 同步。
 const voiceMode = ref('chat')
-pageItems.splice(1, 0, {
-  key: 'navigation',
-  label: '高德导航',
-  description: '起终点、语音解析、路线规划',
-})
 // liveState 来自 /api/status 或 server_state；aiState/visionState 可能来自独立 WebSocket 事件。
 const liveState = ref(null)
 const aiState = ref(null)
@@ -167,6 +146,12 @@ const audioUnlocked = ref(false)
 const assistantAudioEnabled = ref(true)
 const audioStatus = ref('浏览器 AI 语音尚未解锁。导盲提示由设备端播放，点击“解锁 AI 语音”后播放 AI 回复。')
 const aiAudioChunksSeen = ref(0)
+
+// 手机 GPS 定位上报：通过现有 /ws/view viewer 连接上行 gps_update 给 Go 转发。
+const gpsEnabled = ref(false)
+const gpsStatus = ref('未开启')
+const gpsFix = ref(null)
+let gpsWatchId = null
 
 let refreshTimer = null
 let snapshotTimer = null
@@ -196,10 +181,10 @@ const assistantAudioState = {
 
 const themeConfig = {
   token: {
-    colorPrimary: '#1677ff',
-    colorSuccess: '#2fb27a',
-    colorWarning: '#d89614',
-    colorError: '#cf3f4e',
+    colorPrimary: '#2563eb',
+    colorSuccess: '#34d399',
+    colorWarning: '#fb923c',
+    colorError: '#f87171',
     borderRadius: 8,
     fontSize: 14,
   },
@@ -208,9 +193,15 @@ const themeConfig = {
 const effectiveVisionState = computed(() => liveVisionState.value || liveState.value?.vision || null)
 const activePageMeta = computed(() => pageItems.find((item) => item.key === activePage.value) || pageItems[0])
 const sidebarSyncText = computed(() => formatRelativeTime(lastSyncedAt.value))
+const deviceIdText = computed(() => {
+  const device = liveState.value?.device
+  if (!device?.deviceId) return '等待握手'
+  return device.deviceId
+})
+const firmwareText = computed(() => liveState.value?.device?.firmware || '—')
 const aiStatusText = computed(() => {
   if (!aiState.value?.enabled) return '未启用'
-  return aiState.value.connected ? '在线' : '离线'
+  return aiState.value.connected ? '运行中' : '离线'
 })
 const visionStatusText = computed(() => {
   if (!effectiveVisionState.value?.enabled) return '未配置'
@@ -553,6 +544,60 @@ function connectLiveSocket() {
   socket.addEventListener('error', () => socket.close())
 }
 
+function sendGpsUpdate(lat, lng, accuracy) {
+  // 通过 HTTP POST /api/gps/update 上报 GPS（WGS-84），Go 转发给 Python worker 做路段匹配与逐段播报。
+  // 注意：不走 WebSocket，因为 Go 的 handleViewerWS 是纯接收端；GPS 走 /api/gps/update HTTP 端点。
+  fetch(apiUrl('/api/gps/update'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ lat, lng, accuracy }),
+  }).catch(() => {})
+  gpsFix.value = { lat, lng, accuracy, updatedAt: new Date() }
+  gpsStatus.value = `定位中 (${Number(lng).toFixed(6)}, ${Number(lat).toFixed(6)})`
+}
+
+function startGpsTracking() {
+  // 手机浏览器 navigator.geolocation.watchPosition 持续上报经纬度。
+  if (!('geolocation' in navigator)) {
+    gpsStatus.value = '当前浏览器不支持定位'
+    gpsEnabled.value = false
+    return
+  }
+  gpsStatus.value = '等待定位授权…'
+  gpsWatchId = navigator.geolocation.watchPosition(
+    (position) => {
+      const { latitude, longitude, accuracy } = position.coords
+      gpsStatus.value = '定位中'
+      sendGpsUpdate(latitude, longitude, accuracy || 0)
+    },
+    (error) => {
+      gpsStatus.value = `定位失败: ${error.message || error.code}`
+      gpsEnabled.value = false
+      gpsWatchId = null
+    },
+    { enableHighAccuracy: true, maximumAge: 2000, timeout: 15000 }
+  )
+}
+
+function stopGpsTracking() {
+  if (gpsWatchId != null && 'geolocation' in navigator) {
+    navigator.geolocation.clearWatch(gpsWatchId)
+  }
+  gpsWatchId = null
+  gpsFix.value = null
+  gpsStatus.value = '未开启'
+}
+
+function toggleGpsTracking() {
+  if (gpsEnabled.value) {
+    stopGpsTracking()
+    gpsEnabled.value = false
+  } else {
+    gpsEnabled.value = true
+    startGpsTracking()
+  }
+}
+
 async function unlockAudio() {
   // 浏览器策略要求用户手势后才能播放音频；点击按钮后恢复 AudioContext。
   ensureAudioGraph()
@@ -876,6 +921,7 @@ onBeforeUnmount(() => {
     liveSocket.close()
     liveSocket = null
   }
+  stopGpsTracking()
   revokeLiveFrameUrls()
 })
 </script>

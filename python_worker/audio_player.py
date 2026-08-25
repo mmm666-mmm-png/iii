@@ -71,6 +71,17 @@ _playing_lock = threading.Lock()  # 播放锁
 _initialized = False
 _last_play_ts = 0.0  # 记录上次播放结束时间，用于决定预热静音长度
 
+
+def is_audio_playing() -> bool:
+    """当前是否有本地音频（预录语音 / 动态 TTS 播报）正在播放。
+
+    供 ASR 侧判断：系统播报期间不回传 ASR 结果给千问，避免播报回声
+    被麦克风拾取后又被识别成输入、引发「自问自答」。
+    """
+    with _playing_lock:
+        return _is_playing
+
+
 def load_wav_file(filepath):
     """加载 WAV 文件并返回 8kHz mono PCM16；可走压缩缓存减少内存占用。"""
     if filepath in _audio_cache:

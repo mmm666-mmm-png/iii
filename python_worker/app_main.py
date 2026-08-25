@@ -575,6 +575,76 @@ def _set_vision_result(**values):
     last_vision_result.update(values)
     last_vision_result["updatedAt"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
+
+def is_any_audio_playing() -> bool:
+    """当前是否有任何系统语音在播报（Omni 问答 或 本地导航/TTS/预录语音）。
+
+    播报期间 ASR final 不触发千问，避免导航播报回声被麦克风拾取后
+    又被识别成输入、引发「自问自答」。
+    """
+    if is_playing_now():
+        return True
+    try:
+        from audio_player import is_audio_playing
+
+        return is_audio_playing()
+    except Exception:
+        return False
+
+
+# ========= 高德导航语音会话路由 =========
+_AMAP_NAV_START_WORDS = ("导航到", "导航去", "带我去", "前往")
+_AMAP_NAV_STOP_WORDS = ("退出导航", "关闭导航", "关掉导航", "切换聊天", "切回聊天", "切到聊天")
+_voice_session_mgr = None
+
+
+def get_voice_session_manager():
+    """懒加载 VoiceSessionManager 单例（已接好真实底层）。"""
+    global _voice_session_mgr
+    if _voice_session_mgr is None:
+        from voice_session_wiring import build_voice_session_manager
+        _voice_session_mgr = build_voice_session_manager()
+    return _voice_session_mgr
+
+
+async def _try_route_amap_session(user_text: str) -> bool:
+    """把高德导航相关语音路由到 VoiceSessionManager，返回是否已拦截。
+
+    拦截规则：
+    - 「导航到/导航去/带我去/前往 XX」→ 启动高德导航；
+    - 「退出导航/关闭导航/切换聊天…」→ 退出高德导航；
+    - 当前已在高德导航会话(mode==amap_nav)时，其余语音也交给它
+      （暂停导航 → 千问回答 → 恢复导航）。
+    """
+    text = (user_text or "").strip()
+    if not text:
+        return False
+    try:
+        from voice_session_manager import MODE_AMAP_NAV
+    except Exception as exc:
+        print(f"[AMAP] 会话管理器导入失败: {exc}")
+        return False
+
+    mgr = get_voice_session_manager()
+    is_start = any(w in text for w in _AMAP_NAV_START_WORDS)
+    is_stop = any(w in text for w in _AMAP_NAV_STOP_WORDS)
+    if not (is_start or is_stop or mgr.mode == MODE_AMAP_NAV):
+        return False
+
+    try:
+        result = await mgr.handle_asr_final(text)
+        action = result.get("action")
+        if action == "start_nav":
+            print(f"[AMAP] 高德导航 -> {result.get('destination') or ''}")
+        elif action == "stop_nav":
+            print("[AMAP] 退出高德导航")
+        else:
+            print("[AMAP] 导航中语音 -> 千问")
+        return True
+    except Exception as exc:
+        print(f"[AMAP] 会话处理异常: {exc}")
+        return False
+
 # ========= 自定义的 start_ai_with_text，支持识别特殊命令 =========
 async def start_ai_with_text_custom(user_text: str):
     """
@@ -585,6 +655,10 @@ async def start_ai_with_text_custom(user_text: str):
     """
     global navigation_active, blind_path_navigator, cross_street_active, cross_street_navigator, orchestrator
     
+    # 【新增】高德导航会话路由（导航到XX / 退出导航 / 导航中语音）
+    if await _try_route_amap_session(user_text):
+        return
+
     # 【修改】在导航模式和红绿灯检测模式下，只有特定词才进入omni对话
     if orchestrator:
         current_state = orchestrator.get_state()
@@ -1131,7 +1205,7 @@ async def ws_audio(ws: WebSocket):
                         post=post,
                         ui_broadcast_partial=ui_broadcast_partial,
                         ui_broadcast_final=ui_broadcast_final,
-                        is_playing_now_fn=is_playing_now,
+                        is_playing_now_fn=is_any_audio_playing,
                         start_ai_with_text_fn=start_ai_with_text_custom,  # 使用自定义版本
                         full_system_reset_fn=full_system_reset,
                         interrupt_lock=interrupt_lock,

@@ -851,6 +851,23 @@ func (b *dashScopeBridge) setInputPaused(paused bool) {
 	}
 }
 
+// InterruptAudio 中断当前 AI 语音输出：取消 DashScope 回答、丢弃待发音频并清空
+// 设备播放队列。由 Python 语音会话管理器的 stop_tts 经 POST /api/voice/interrupt 触发。
+func (b *dashScopeBridge) InterruptAudio() {
+	if b == nil {
+		return
+	}
+	if b.isResponding() {
+		if err := b.cancelResponse(); err != nil && !errors.Is(err, errDashScopeNotConnected) {
+			log.Printf("DashScope response cancel on interrupt failed: %v", err)
+		}
+	}
+	b.discardPendingAudio()
+	if b.server != nil {
+		b.server.clearDevicePlaybackQueue()
+	}
+}
+
 func (b *dashScopeBridge) inputLockedAt(now time.Time) bool {
 	// 模型正在回答，或刚收到下行音频尚未播放完时，都不接收新的麦克风输入。
 	if b.responding {

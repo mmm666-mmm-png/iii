@@ -99,7 +99,16 @@ class VoiceInteractionService:
                 origin_lng, origin_lat = origin_future.result(timeout=20)
             else:
                 origin_desc = "当前位置"
-                origin_lng, origin_lat = 117.327, 34.812
+                origin_lng, origin_lat = self._current_origin_coords()
+                if origin_lng is None or origin_lat is None:
+                    return {
+                        "intent": "navigation",
+                        "response_text": "请先在手机上开启定位，我再为您规划路线。",
+                        "navigation_request": None,
+                        "need_planning": False,
+                        "origin_desc": origin_desc,
+                        "destination_desc": destination_desc,
+                    }
 
         if not origin_is_current and origin_lng == 0 and origin_lat == 0:
             return {
@@ -141,6 +150,22 @@ class VoiceInteractionService:
             "origin_desc": origin_desc,
             "destination_desc": destination_desc,
         }
+
+    def _current_origin_coords(self) -> Tuple[Optional[float], Optional[float]]:
+        """从最近一次手机 GPS 定位取起点坐标（GCJ-02），未定位返回 (None, None)。
+
+        手机 geolocation 上报的是 WGS-84，GpsNavigationTrigger.update_position
+        已转成 GCJ-02 并缓存，这里直接取 GCJ-02 坐标作为路线起点。
+        """
+        try:
+            from application.gps_navigation_trigger import get_gps_trigger
+
+            pos = get_gps_trigger().last_position()
+            if pos and pos.get("lng") is not None and pos.get("lat") is not None:
+                return float(pos["lng"]), float(pos["lat"])
+        except Exception as exc:
+            logger.warning("读取手机定位失败: %s", exc)
+        return None, None
 
     def _geocode(self, location_name: str) -> Tuple[float, float]:
         """Geocode a location name with local cache and Amap fallback."""

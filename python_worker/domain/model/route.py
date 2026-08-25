@@ -60,6 +60,55 @@ def point_to_segment_distance(
     return p.distance_to(proj), t
 
 
+# GCJ-02 椭球参数（火星坐标加密）
+_GCJ_A = 6378245.0
+_GCJ_EE = 0.00669342162296594323
+
+
+def _gcj_out_of_china(lng: float, lat: float) -> bool:
+    """境外坐标不参与加密。"""
+    return not (72.004 <= lng <= 137.8347 and 0.8293 <= lat <= 55.8271)
+
+
+def _gcj_transform_lat(x: float, y: float) -> float:
+    ret = -100.0 + 2.0 * x + 3.0 * y + 0.2 * y * y + 0.1 * x * y + 0.2 * math.sqrt(abs(x))
+    ret += (20.0 * math.sin(6.0 * x * math.pi) + 20.0 * math.sin(2.0 * x * math.pi)) * 2.0 / 3.0
+    ret += (20.0 * math.sin(y * math.pi) + 40.0 * math.sin(y / 3.0 * math.pi)) * 2.0 / 3.0
+    ret += (160.0 * math.sin(y / 12.0 * math.pi) + 320.0 * math.sin(y * math.pi / 30.0)) * 2.0 / 3.0
+    return ret
+
+
+def _gcj_transform_lng(x: float, y: float) -> float:
+    ret = 300.0 + x + 2.0 * y + 0.1 * x * x + 0.1 * x * y + 0.1 * math.sqrt(abs(x))
+    ret += (20.0 * math.sin(6.0 * x * math.pi) + 20.0 * math.sin(2.0 * x * math.pi)) * 2.0 / 3.0
+    ret += (20.0 * math.sin(x * math.pi) + 40.0 * math.sin(x / 3.0 * math.pi)) * 2.0 / 3.0
+    ret += (150.0 * math.sin(x / 12.0 * math.pi) + 300.0 * math.sin(x / 30.0 * math.pi)) * 2.0 / 3.0
+    return ret
+
+
+def wgs84_to_gcj02(lng: float, lat: float) -> Tuple[float, float]:
+    """WGS-84 转 GCJ-02（火星坐标）。纯函数，零外部依赖。
+
+    手机 navigator.geolocation 返回 WGS-84，高德路线为 GCJ-02，二者在中国
+    境内偏移可达几百米。按标准 GCJ-02 加密算法把 WGS-84 转成 GCJ-02，消除
+    坐标系差异；境外坐标原样返回。
+    """
+    lng = float(lng)
+    lat = float(lat)
+    if _gcj_out_of_china(lng, lat):
+        return lng, lat
+
+    d_lat = _gcj_transform_lat(lng - 105.0, lat - 35.0)
+    d_lng = _gcj_transform_lng(lng - 105.0, lat - 35.0)
+    rad_lat = lat / 180.0 * math.pi
+    magic = math.sin(rad_lat)
+    magic = 1 - _GCJ_EE * magic * magic
+    sqrt_magic = math.sqrt(magic)
+    d_lat = (d_lat * 180.0) / ((_GCJ_A * (1 - _GCJ_EE)) / (magic * sqrt_magic) * math.pi)
+    d_lng = (d_lng * 180.0) / (_GCJ_A / sqrt_magic * math.cos(rad_lat) * math.pi)
+    return lng + d_lng, lat + d_lat
+
+
 # ============================================================
 # 值对象：途经点
 # ============================================================
@@ -97,6 +146,20 @@ class RoadType:
             RoadType.FOOTBRIDGE: 0.4,
             RoadType.UNKNOWN: 0.3,
         }.get(road_type, 0.3)
+
+    @staticmethod
+    def label(road_type: str) -> str:
+        """道路类型的中文播报名称。"""
+        return {
+            RoadType.BLIND_PATH: "盲道",
+            RoadType.SIDEWALK: "人行道",
+            RoadType.PEDESTRIAN: "步行街",
+            RoadType.CROSSWALK: "斑马线",
+            RoadType.UNDERPASS: "地下通道",
+            RoadType.FOOTBRIDGE: "人行天桥",
+            RoadType.SERVICE: "服务道路",
+            RoadType.UNKNOWN: "普通道路",
+        }.get(road_type, "普通道路")
 
 
 # ============================================================

@@ -1,32 +1,29 @@
 <template>
-  <header class="surface-panel workspace-topbar">
-    <div class="workspace-title-block">
-      <div class="workspace-kicker">Console</div>
+  <header class="glass-topbar">
+    <div class="glass-topbar-title">
       <h2>{{ activePageLabel }}</h2>
-      <p>状态会在后台静默同步；手动刷新只补拉最新状态，不清空当前画面和日志。</p>
+      <p>状态后台静默同步 · 手动刷新补拉最新状态，不清空当前画面和日志。</p>
     </div>
 
-    <div class="workspace-toolbar">
-      <a-space wrap>
-        <a-tag :color="liveState?.deviceConnected ? 'processing' : 'default'" class="header-tag">
-          <ApiOutlined />
-          <span>{{ liveState?.deviceConnected ? '设备在线' : '设备离线' }}</span>
-        </a-tag>
-        <a-tag :color="aiTagColor" class="header-tag">
-          <AudioOutlined />
-          <span>AI {{ aiLabel }}</span>
-        </a-tag>
-        <a-tag :color="visionTagColor" class="header-tag">
-          <CompassOutlined />
-          <span>视觉 {{ visionLabel }}</span>
-        </a-tag>
-        <a-tag :color="backgroundRefreshing ? 'processing' : 'default'" class="header-tag">
-          <HistoryOutlined />
-          <span>{{ backgroundRefreshing ? '后台同步中' : `同步 ${formattedLastSynced}` }}</span>
-        </a-tag>
-      </a-space>
+    <div class="glass-topbar-tags">
+      <a-tag :color="liveState?.deviceConnected ? 'success' : 'default'" class="glass-tag">
+        <ApiOutlined />
+        <span>{{ liveState?.deviceConnected ? '设备在线' : '设备离线' }}</span>
+      </a-tag>
+      <a-tag :color="aiTagColor" class="glass-tag">
+        <AudioOutlined />
+        <span>AI {{ aiLabel }}</span>
+      </a-tag>
+      <a-tag :color="visionTagColor" class="glass-tag">
+        <CompassOutlined />
+        <span>视觉 {{ visionLabel }}</span>
+      </a-tag>
+      <a-tag :color="backgroundRefreshing ? 'processing' : 'default'" class="glass-tag">
+        <HistoryOutlined />
+        <span>{{ backgroundRefreshing ? '后台同步中' : `同步 ${formattedLastSynced}` }}</span>
+      </a-tag>
 
-      <a-button type="primary" :loading="refreshing" @click="$emit('refresh')">
+      <a-button type="primary" :loading="refreshing" @click="$emit('refresh')" class="glass-refresh">
         <template #icon>
           <ReloadOutlined />
         </template>

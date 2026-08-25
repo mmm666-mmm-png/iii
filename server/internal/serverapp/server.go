@@ -18,6 +18,14 @@ import (
 const deviceReadTimeout = 2 * time.Minute
 const deviceActiveWindow = 6 * time.Second
 
+// 浏览器 viewer WebSocket keepalive：定期 ping，浏览器会自动回 pong，
+// 借此识别半开连接并干净关闭，避免连接被 RST 后代理端报 ECONNRESET。
+const (
+	viewerPongWait   = 60 * time.Second
+	viewerPingPeriod = 30 * time.Second
+	viewerWriteWait  = 10 * time.Second
+)
+
 // DeviceHello 是设备 hello JSON 的服务端结构。ESP32 UDP hello 与旧 WebSocket
 // hello 都会被归一化到这个结构，再广播给前端。
 type DeviceHello struct {
@@ -488,6 +496,8 @@ func (s *server) newRouter() *gin.Engine {
 	router.GET("/api/navigation/status", s.handleNavigationStatus)
 	router.GET("/api/vision/status", s.handleVisionStatus)
 	router.POST("/api/vision/control", s.handleVisionControl)
+	router.POST("/api/voice/interrupt", s.handleVoiceInterrupt)
+	router.POST("/api/gps/update", s.handleGpsUpdate)
 	router.GET("/api/debug/speaker-test", s.handleSpeakerTest)
 	router.POST("/api/debug/speaker-test", s.handleSpeakerTest)
 	router.GET("/snapshot.jpg", s.handleSnapshot)
@@ -647,6 +657,35 @@ func (s *server) handleVisionControl(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
+func (s *server) handleVoiceInterrupt(c *gin.Context) {
+	// Python 语音会话管理器的 stop_tts 会 POST 到这里，请求中断当前 AI 语音输出：
+	// 取消 DashScope 回答、丢弃待发音频并清空设备播放队列。
+	if s.ai != nil {
+		s.ai.InterruptAudio()
+	}
+	c.JSON(http.StatusOK, map[string]any{"ok": true})
+}
+
+func (s *server) handleGpsUpdate(c *gin.Context) {
+	// 手机浏览器上报的实时 GPS 坐标（WGS-84），转发给 Python worker 做路段匹配与逐段播报。
+	// 始终返回 200，避免偶发异常导致手机端定位上报断开。
+	if s.vision == nil {
+		c.JSON(http.StatusOK, map[string]any{"ok": true})
+		return
+	}
+	var payload struct {
+		Lat      float64 `json:"lat"`
+		Lng      float64 `json:"lng"`
+		Accuracy float64 `json:"accuracy"`
+	}
+	if err := c.ShouldBindJSON(&payload); err != nil && err != io.EOF {
+		c.JSON(http.StatusOK, map[string]any{"ok": false})
+		return
+	}
+	s.vision.gpsUpdate(payload.Lat, payload.Lng, payload.Accuracy)
+	c.JSON(http.StatusOK, map[string]any{"ok": true})
+}
+
 func (s *server) setAIInputPaused(paused bool) {
 	if s.ai != nil {
 		s.ai.setInputPaused(paused)
@@ -667,8 +706,13 @@ func (s *server) setVoiceMode(mode string) {
 		return
 	}
 	s.voiceModeMu.Lock()
+	changed := s.voiceMode != mode
 	s.voiceMode = mode
 	s.voiceModeMu.Unlock()
+	// 语音模式变化后立即广播 ai_state，让前端“语音交互”卡片实时切换为千问聊天/高德导航。
+	if changed && s.ai != nil {
+		s.ai.broadcastState()
+	}
 }
 
 func normalizeVisionCommand(command string) string {
@@ -809,6 +853,31 @@ func (s *server) handleViewerWS(c *gin.Context) {
 	defer conn.Close()
 
 	conn.SetReadLimit(64 << 10)
+
+	// keepalive：浏览器 viewer 是纯接收端，只有协议层 pong 会回来。
+	// 通过 ping/pong 把读超时不断续期，检测到失效连接后干净关闭。
+	_ = conn.SetReadDeadline(time.Now().Add(viewerPongWait))
+	conn.SetPongHandler(func(string) error {
+		_ = conn.SetReadDeadline(time.Now().Add(viewerPongWait))
+		return nil
+	})
+	pingDone := make(chan struct{})
+	pingTicker := time.NewTicker(viewerPingPeriod)
+	go func() {
+		defer pingTicker.Stop()
+		for {
+			select {
+			case <-pingDone:
+				return
+			case <-pingTicker.C:
+				if err := conn.WriteControl(websocket.PingMessage, nil, time.Now().Add(viewerWriteWait)); err != nil {
+					_ = conn.Close()
+					return
+				}
+			}
+		}
+	}()
+	defer close(pingDone)
 
 	viewer := &viewerClient{conn: conn}
 	s.hub.addViewer(viewer)

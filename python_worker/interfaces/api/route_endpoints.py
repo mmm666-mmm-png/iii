@@ -15,6 +15,7 @@ from application.dtos.route_dtos import RoutePlanningRequest, VoiceCommandReques
 from application.route_broadcast_service import RouteBroadcastService
 from application.route_planning_service import RoutePlanningService
 from application.voice_interaction_service import VoiceInteractionService
+from application.gps_navigation_trigger import get_gps_trigger
 from domain.model.obstacle import Obstacle
 from domain.model.route import GeoPoint
 from infrastructure.config import AppConfig
@@ -85,6 +86,12 @@ class ObstacleReportBody(BaseModel):
     severity: str = Field(default="medium", description="严重程度: low/medium/high")
     confidence: float = Field(default=0.8, ge=0, le=1)
     description: str = ""
+
+
+class GpsUpdateBody(BaseModel):
+    lat: float = Field(..., description="纬度 (WGS-84)")
+    lng: float = Field(..., description="经度 (WGS-84)")
+    accuracy: Optional[float] = Field(default=None, description="定位精度（米）")
 
 
 def _build_plan_request(body: PlanRouteBody):
@@ -170,6 +177,10 @@ def plan_route(body: PlanRouteBody):
 
         planning_result = route_service.plan_route(request)
         _announce_navigation_voice(planning_result.broadcast_text)
+        get_gps_trigger().set_route(
+            planning_result.segments,
+            blind_path_coverage=planning_result.best_route.blind_path_coverage,
+        )
 
         if not request_context["response_text"]:
             request_context["response_text"] = planning_result.broadcast_text
@@ -211,6 +222,10 @@ def process_voice_command(body: VoiceCommandBody):
             planning_result = route_service.plan_route(result["navigation_request"])
             result["planning_result"] = planning_result.to_dict()
             _announce_navigation_voice(planning_result.broadcast_text)
+            get_gps_trigger().set_route(
+                planning_result.segments,
+                blind_path_coverage=planning_result.best_route.blind_path_coverage,
+            )
         else:
             _announce_navigation_voice(result.get("response_text", ""))
 
@@ -239,6 +254,10 @@ def broadcast_route(body: PlanRouteBody):
 
         planning_result = route_service.plan_route(request)
         _announce_navigation_voice(planning_result.broadcast_text)
+        get_gps_trigger().set_route(
+            planning_result.segments,
+            blind_path_coverage=planning_result.best_route.blind_path_coverage,
+        )
 
         steps = planning_result.turn_by_turn
         get_broadcast_service().broadcast_steps(steps)
@@ -341,6 +360,25 @@ async def navigation_status():
             "timestamp": datetime.utcnow().isoformat(),
         },
     }
+
+
+@router.post("/gps/update")
+def gps_update(body: GpsUpdateBody):
+    """接收手机实时 GPS 坐标（WGS-84），匹配当前导航路线并触发逐段播报。
+
+    Go 后端把手机浏览器上报的 GPS 转发到此端点；内部先把 WGS-84 转成 GCJ-02
+    再与路线路段匹配，进入新路段即触发该段 instruction 的 TTS 播报。
+
+    始终返回 200 + success 字段，避免偶发异常导致手机/Go 转发端断开。
+    """
+    try:
+        result = get_gps_trigger().update_position(
+            lng=body.lng, lat=body.lat, accuracy=body.accuracy
+        )
+        return {"success": True, "data": result}
+    except Exception as exc:
+        logger.error("gps update failed: %s", exc, exc_info=True)
+        return {"success": False, "data": {"error": str(exc)}}
 
 
 def _announce_navigation_voice(text: str) -> None:

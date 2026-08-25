@@ -12,7 +12,7 @@ import logging
 import threading
 from typing import Dict, List, Optional
 
-from domain.model.route import Route
+from domain.model.route import RoadType, Route
 from infrastructure.tts_client import TtsClient
 
 logger = logging.getLogger(__name__)
@@ -44,6 +44,27 @@ class RouteBroadcastService:
         return steps
 
     @staticmethod
+    def build_segments(route: Route) -> List[Dict]:
+        """把 Route.segments 转成带 start/end 坐标的路段列表（供 GPS 触发匹配）。
+
+        每项与 GpsNavigationTrigger.set_route 期望的格式一致，含 start/end
+        的 lng/lat 坐标，用于手机定位的「点到路段最短距离」匹配。
+        """
+        segments: List[Dict] = []
+        for index, seg in enumerate(route.segments, start=1):
+            segments.append(
+                {
+                    "index": index,
+                    "instruction": (seg.instruction or "请继续直行").strip(),
+                    "start": {"lng": seg.start.lng, "lat": seg.start.lat},
+                    "end": {"lng": seg.end.lng, "lat": seg.end.lat},
+                    "distance_meters": round(seg.distance_meters, 1),
+                    "road_type": seg.road_type,
+                }
+            )
+        return segments
+
+    @staticmethod
     def build_guide_text(route: Route) -> str:
         """构建整段播报文本（供前端展示 / 日志记录）。"""
         lines = []
@@ -53,9 +74,13 @@ class RouteBroadcastService:
 
     @staticmethod
     def step_to_speech(step: Dict) -> str:
-        """把单个步骤转为适合语音播报的一句话。"""
+        """把单个步骤转为适合语音播报的一句话（含道路类型路线状况）。"""
         instruction = str(step.get("instruction") or "").strip()
-        return f"第{step.get('index')}步，{instruction}"
+        speech = f"第{step.get('index')}步，{instruction}"
+        road_type = str(step.get("road_type") or "")
+        if road_type and road_type != RoadType.UNKNOWN:
+            speech += f"，此路段为{RoadType.label(road_type)}"
+        return speech
 
     def broadcast_steps(self, steps: List[Dict]) -> None:
         """在后台线程中把每个步骤合成为语音并顺序播放。"""
@@ -82,4 +107,25 @@ class RouteBroadcastService:
                 logger.error("路线语音播报失败: %s", exc)
 
         thread = threading.Thread(target=_worker, daemon=True)
+        thread.start()
+
+    def broadcast_text(self, text: str) -> None:
+        """把任意文本合成为语音并后台播放（用于盲道覆盖等非步骤播报）。"""
+        message = (text or "").strip()
+        if not message:
+            return
+
+        def _worker_text() -> None:
+            try:
+                pcm = self.tts_client.synthesize_pcm16_8k(message)
+                if not pcm:
+                    logger.warning("自由文本播报未生成语音，可能 TTS 不可用")
+                    return
+                from audio_player import play_pcm_sequence
+
+                play_pcm_sequence([pcm])
+            except Exception as exc:
+                logger.error("自由文本语音播报失败: %s", exc)
+
+        thread = threading.Thread(target=_worker_text, daemon=True)
         thread.start()

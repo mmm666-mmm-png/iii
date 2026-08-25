@@ -98,6 +98,7 @@ class RoutePlanningResult:
     broadcast_text_en: str = ""
     turn_by_turn: List[Dict] = field(default_factory=list)
     route_guide_text: str = ""
+    segments: List[Dict] = field(default_factory=list)
 
     def to_dict(self) -> dict:
         return {
@@ -123,6 +124,7 @@ class RoutePlanningResult:
             "broadcast_text_en": self.broadcast_text_en,
             "turn_by_turn": self.turn_by_turn,
             "route_guide_text": self.route_guide_text,
+            "segments": self.segments,
         }
 
 

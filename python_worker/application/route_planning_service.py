@@ -115,6 +115,7 @@ class RoutePlanningService:
         # 5.1 生成逐段路线播报（高德每一步导航指令）
         turn_by_turn = RouteBroadcastService.build_turn_by_turn(best_route)
         route_guide_text = RouteBroadcastService.build_guide_text(best_route)
+        segments = RouteBroadcastService.build_segments(best_route)
 
         # 6. 组装结果
         return RoutePlanningResult(
@@ -137,6 +138,7 @@ class RoutePlanningService:
             ),
             turn_by_turn=turn_by_turn,
             route_guide_text=route_guide_text,
+            segments=segments,
         )
 
     def get_route_detail(self, route_id: str, request: RoutePlanningRequest) -> Optional[dict]:

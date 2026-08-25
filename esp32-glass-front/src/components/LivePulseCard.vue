@@ -1,60 +1,56 @@
 <template>
-  <section class="surface-panel live-surface">
-    <div class="surface-head">
+  <section class="glass-console">
+    <header class="console-topbar">
       <div>
         <h2>{{ pageTitle }}</h2>
         <p>{{ pageDescription }}</p>
       </div>
-      <a-space wrap>
-        <a-tag :color="liveState?.deviceConnected ? 'success' : 'default'">
-          {{ liveState?.deviceConnected ? '设备在线' : '设备离线' }}
-        </a-tag>
-        <a-tag :color="activeMode === 'navigation' ? 'processing' : 'success'">
-          {{ activeModeLabel }}
-        </a-tag>
-        <a-tag :color="voiceModeTagColor">
-          {{ voiceModeLabel }}
-        </a-tag>
+      <div class="console-tags">
+        <a-tag :color="liveState?.deviceConnected ? 'success' : 'default'">{{ liveState?.deviceConnected ? '设备在线' : '设备离线' }}</a-tag>
+        <a-tag :color="activeMode === 'navigation' ? 'processing' : 'success'">{{ activeModeLabel }}</a-tag>
+        <a-tag :color="voiceModeTagColor">{{ voiceModeLabel }}</a-tag>
         <a-tag :color="aiTagColor">AI {{ aiStateLabel }}</a-tag>
-      </a-space>
-    </div>
+      </div>
+    </header>
 
-    <div v-if="showPreviewSection" class="live-grid" :class="{ 'live-grid-single': !showPreview }">
-      <div v-if="showPreview" class="live-preview-panel">
-        <div class="preview-shell classic-preview">
+    <div v-if="showCameraColumn || showControlColumn" class="console-layout">
+      <div v-if="showCameraColumn" class="camera-column">
+        <div class="camera-shell">
           <a-image
             v-if="snapshotSrc"
             :src="snapshotSrc"
             :preview="false"
-            class="preview-image"
-            :class="{ 'preview-image-rotated': snapshotRotated }"
-            alt="直播快照"
+            class="camera-image"
+            :class="{ 'camera-image-rotated': snapshotRotated }"
+            alt="实时画面"
           />
           <a-empty v-else description="暂无实时画面" />
+
+          <div v-if="snapshotSrc && showAR" class="ar-overlay">
+            <div class="ar-top">
+              <button type="button" class="ar-back" @click="$emit('navigate', 'live')">‹ 返回</button>
+              <span class="ar-mode">{{ arModeLabel }}</span>
+            </div>
+            <div class="ar-chips">
+              <div class="ar-chip"><span>盲道覆盖率</span><strong>{{ coveragePct }}</strong></div>
+              <div class="ar-chip"><span>红绿灯</span><strong>{{ trafficLights }}</strong></div>
+              <div class="ar-chip is-orange"><span>转弯路口</span><strong>{{ routeTurns }}</strong></div>
+            </div>
+            <div v-if="currentGuidance" class="ar-guidance">{{ currentGuidance }}</div>
+          </div>
         </div>
 
-        <section
-          v-if="showConsolesUnderPreview"
-          class="live-console-wrap live-console-grid live-console-under-preview"
-          :class="consoleGridClass"
-        >
-          <div v-if="showTranscript" class="live-transcript-panel">
-            <div class="live-transcript-head">
+        <div v-if="showTranscript || showVisionEvents" class="camera-console">
+          <div v-if="showTranscript" class="panel-card">
+            <div class="panel-card-head">
               <strong>实时转写</strong>
-              <a-tag :color="liveTranscripts.length > 0 ? 'processing' : 'default'">{{ liveTranscripts.length }} lines</a-tag>
+              <a-tag :color="liveTranscripts.length > 0 ? 'processing' : 'default'">{{ liveTranscripts.length }} 条</a-tag>
             </div>
-            <div ref="transcriptRef" class="live-transcript-list">
-              <div v-if="transcriptItems.length === 0" class="live-transcript-empty">
-                暂无实时转写
-              </div>
+            <div ref="transcriptRef" class="panel-card-list">
+              <div v-if="transcriptItems.length === 0" class="panel-empty">暂无实时转写</div>
               <template v-else>
-                <article
-                  v-for="item in transcriptItems"
-                  :key="item.id"
-                  class="live-transcript-item"
-                  :class="`live-transcript-item-${item.role}`"
-                >
-                  <div class="live-transcript-item-head">
+                <article v-for="item in transcriptItems" :key="item.id" class="transcript-item" :class="`transcript-item-${item.role}`">
+                  <div class="transcript-item-head">
                     <span>{{ transcriptRoleLabel(item.role) }}</span>
                     <time>{{ formatTerminalTime(item.createdAt) }}</time>
                   </div>
@@ -64,16 +60,16 @@
             </div>
           </div>
 
-          <div v-if="showVisionEvents" class="vision-event-panel">
-            <div class="live-transcript-head">
+          <div v-if="showVisionEvents" class="panel-card">
+            <div class="panel-card-head">
               <strong>导航事件</strong>
-              <a-tag :color="visionEvents.length > 0 ? 'processing' : 'default'">{{ visionEvents.length }} events</a-tag>
+              <a-tag :color="visionEvents.length > 0 ? 'processing' : 'default'">{{ visionEvents.length }} 条</a-tag>
             </div>
-            <div class="vision-event-list">
-              <div v-if="visionEvents.length === 0" class="live-transcript-empty">暂无导航事件</div>
+            <div class="panel-card-list">
+              <div v-if="visionEvents.length === 0" class="panel-empty">暂无导航事件</div>
               <template v-else>
-                <article v-for="event in recentVisionEvents" :key="visionEventKey(event)" class="vision-event-item">
-                  <div>
+                <article v-for="event in recentVisionEvents" :key="visionEventKey(event)" class="vision-item">
+                  <div class="vision-item-head">
                     <strong>{{ visionEventTitle(event) }}</strong>
                     <span>{{ formatTerminalTime(event.createdAt) }}</span>
                   </div>
@@ -82,144 +78,43 @@
               </template>
             </div>
           </div>
-        </section>
+        </div>
       </div>
 
-      <div class="live-side-panel">
-        <div v-if="showModeSelector" class="mode-switch-panel">
-          <div class="mode-switch-head">
-            <div>
-              <strong>工作模式</strong>
-              <span>导盲和回答问题二选一，主画面保持原始实时画面。</span>
-            </div>
-            <a-tag>{{ activeModeLabel }}</a-tag>
-          </div>
-
-          <div class="mode-switch-actions">
+      <div v-if="showControlColumn" class="control-column">
+        <div class="control-card">
+          <div class="control-tabs" role="tablist">
             <button
+              v-for="tab in controlTabs"
+              :key="tab.key"
               type="button"
-              class="mode-choice"
-              :class="{ 'mode-choice-active': activeMode === 'navigation' }"
-              @click="changeMode('navigation')"
+              class="control-tab"
+              :class="{ 'control-tab-active': activeControlTab === tab.key }"
+              @click="activeControlTab = tab.key"
             >
-              <CompassOutlined class="mode-choice-icon" />
-              <span>导盲</span>
-              <small>盲道导航、过马路、红绿灯和找物品</small>
-            </button>
-            <button
-              type="button"
-              class="mode-choice"
-              :class="{ 'mode-choice-active': activeMode === 'qa' }"
-              @click="changeMode('qa')"
-            >
-              <MessageOutlined class="mode-choice-icon" />
-              <span>回答问题</span>
-              <small>实时转写、AI 回复和语音播放</small>
+              {{ tab.label }}
             </button>
           </div>
-        </div>
 
-        <div v-if="showModeSelector" class="mode-switch-panel voice-mode-panel">
-          <div class="mode-switch-head">
-            <div>
-              <strong>语音交互</strong>
-              <span>语音说“聊天”或“导航模式”自由切换，两者互不干扰。</span>
+          <div v-if="activeControlTab === 'nav'" class="control-tab-body">
+            <div class="control-current">
+              <span>当前位置</span>
+              <strong>{{ originText || '未填写起点，默认当前位置' }}</strong>
             </div>
-            <a-tag :color="voiceModeTagColor">{{ voiceModeLabel }}</a-tag>
-          </div>
-          <div class="voice-mode-grid">
-            <div class="voice-mode-card" :class="{ 'voice-mode-card-active': voiceMode === 'chat' }">
-              <MessageOutlined class="mode-choice-icon" />
-              <strong>千问聊天</strong>
-              <small>语音交给 Qwen Omni 多模态问答</small>
-            </div>
-            <div class="voice-mode-card" :class="{ 'voice-mode-card-active': voiceMode === 'navigation' }">
-              <EnvironmentOutlined class="mode-choice-icon" />
-              <strong>高德导航</strong>
-              <small>语音交给高德路线规划并逐段播报</small>
-            </div>
-          </div>
-        </div>
 
-        <div v-if="showMetrics" class="metric-strip">
-          <div class="metric-cell">
-            <span>观看端</span>
-            <strong>{{ viewerValue }}</strong>
-          </div>
-          <div class="metric-cell">
-            <span>视频帧</span>
-            <strong>{{ liveState?.videoFramesSeen ?? 0 }}</strong>
-          </div>
-          <div class="metric-cell">
-            <span>音频块</span>
-            <strong>{{ liveState?.audioChunksSeen ?? 0 }}</strong>
-          </div>
-          <div class="metric-cell">
-            <span>AI 桥接</span>
-            <strong>{{ aiStateLabel }}</strong>
-          </div>
-        </div>
-
-        <div v-if="showNavigation" class="navigation-console">
-          <div class="navigation-console-head">
-            <div>
-              <strong>导航控制</strong>
-              <span>{{ visionStatusLabel }}</span>
+            <div class="field-row">
+              <div>
+                <label class="field-label">起点</label>
+                <a-input v-model:value="originText" size="small" placeholder="例如：枣庄学院" />
+              </div>
+              <div>
+                <label class="field-label">终点</label>
+                <a-input v-model:value="destinationText" size="small" placeholder="例如：万达广场" @press-enter="planNavigationRoute" />
+              </div>
             </div>
-            <a-tag :color="visionTagColor">{{ visionModeLabel }}</a-tag>
-          </div>
 
-          <div class="navigation-actions">
-            <a-button type="primary" size="small" @click="emitVisionCommand('start_blind_navigation')">
-              <template #icon><CompassOutlined /></template>
-              盲道
-            </a-button>
-            <a-button size="small" @click="emitVisionCommand('start_crossing')">
-              <template #icon><AimOutlined /></template>
-              过马路
-            </a-button>
-            <a-button size="small" @click="emitVisionCommand('detect_traffic_light')">
-              <template #icon><ThunderboltOutlined /></template>
-              红绿灯
-            </a-button>
-            <a-button danger size="small" @click="emitVisionCommand('stop')">
-              <template #icon><PauseCircleOutlined /></template>
-              停止
-            </a-button>
-          </div>
-
-          <div class="navigation-search-row">
-            <a-input
-              v-model:value="targetText"
-              size="small"
-              placeholder="物品名称"
-              @press-enter="findObject"
-            />
-            <a-button size="small" @click="findObject">
-              <template #icon><SearchOutlined /></template>
-              查找
-            </a-button>
-          </div>
-
-          <div class="navigation-route-panel">
-            <div class="navigation-route-head">
-              <strong>高德导航</strong>
-              <a-space wrap>
-                <a-tag :color="navigationStatusColor">{{ navigationStatusLabel }}</a-tag>
-                <a-tag :color="navigationSourceColor">{{ navigationSourceLabel }}</a-tag>
-              </a-space>
-            </div>
-            <div class="navigation-route-fields">
-              <a-input v-model:value="originText" size="small" placeholder="起点，例如：枣庄学院" />
-              <a-input
-                v-model:value="destinationText"
-                size="small"
-                placeholder="终点，例如：万达广场"
-                @press-enter="planNavigationRoute"
-              />
-            </div>
-            <div class="navigation-route-actions">
-              <a-button type="primary" size="small" :loading="navigationBusy" @click="planNavigationRoute">
+            <div class="btn-row">
+              <a-button type="primary" size="small" :loading="navigationBusy" @click="planNavigationRoute" class="btn-primary-glow">
                 <template #icon><EnvironmentOutlined /></template>
                 开始导航
               </a-button>
@@ -236,157 +131,217 @@
                 打开高德
               </a-button>
             </div>
-            <div class="navigation-voice-row">
-              <a-input
-                v-model:value="voiceCommandText"
-                size="small"
-                placeholder="语音口令，例如：从学院去万达广场"
-                @press-enter="submitNavigationVoice"
-              />
+
+            <div class="field-row single">
+              <div>
+                <label class="field-label">语音口令</label>
+                <a-input v-model:value="voiceCommandText" size="small" placeholder="例如：从学院去万达广场" @press-enter="submitNavigationVoice" />
+              </div>
             </div>
-            <p v-if="navigationError" class="navigation-error">{{ navigationError }}</p>
-            <div v-if="navigationPlan" class="navigation-route-summary">
-              <div class="navigation-route-summary-head">
+
+            <div class="gps-row">
+              <a-button
+                size="small"
+                :type="gpsEnabled ? 'primary' : 'default'"
+                @click="$emit('toggle-gps')"
+              >
+                {{ gpsEnabled ? '关闭定位' : '开启定位' }}
+              </a-button>
+              <span class="gps-row-status">{{ gpsStatus }}</span>
+              <span v-if="gpsFix" class="gps-row-fix">
+                {{ Number(gpsFix.lng).toFixed(6) }}, {{ Number(gpsFix.lat).toFixed(6) }}
+                <small v-if="gpsFix.accuracy">±{{ Math.round(gpsFix.accuracy) }}m</small>
+              </span>
+            </div>
+
+            <p v-if="navigationError" class="control-error">{{ navigationError }}</p>
+
+            <div class="control-section">
+              <div class="control-section-head">
+                <strong>路况统计</strong>
+                <span>{{ navigationStatusLabel }}</span>
+              </div>
+              <div class="route-stats">
+                <div class="route-stat"><span>全程盲道覆盖率</span><strong class="highlight">{{ coveragePct }}</strong></div>
+                <div class="route-stat"><span>途经红绿灯</span><strong>{{ trafficLights }}</strong></div>
+                <div class="route-stat"><span>需转弯路口</span><strong>{{ routeTurns }}</strong></div>
+                <div class="route-stat"><span>预计时长</span><strong>{{ routeDuration }}</strong></div>
+              </div>
+            </div>
+
+            <div v-if="navigationPlan" class="route-summary">
+              <div class="route-summary-head">
                 <strong>路线结果</strong>
                 <span>{{ navigationPlan.planning_result?.best_route?.name || navigationPlan.response_text || '-' }}</span>
               </div>
-              <div v-if="navigationPlan.planning_result?.best_route" class="navigation-route-metrics">
-                <div>
-                  <span>距离</span>
-                  <strong>{{ formatDistance(navigationPlan.planning_result.best_route.total_distance_meters) }}</strong>
-                </div>
-                <div>
-                  <span>时间</span>
-                  <strong>{{ formatDuration(navigationPlan.planning_result.best_route.total_duration_seconds) }}</strong>
-                </div>
-                <div>
-                  <span>得分</span>
-                  <strong>{{ numberValue(navigationPlan.planning_result.best_route.score, 1) }}</strong>
-                </div>
-                <div>
-                  <span>盲道</span>
-                  <strong>{{ numberValue(navigationPlan.planning_result.best_route.blind_path_coverage_pct, 1) }}%</strong>
-                </div>
-              </div>
-              <p class="navigation-route-source">
-                数据源：{{ navigationPlan.planning_result?.data_sources?.amap ? '高德API' : '本地兜底' }}
-                <span v-if="navigationPlan.planning_result?.best_route?.source"> / {{ navigationPlan.planning_result.best_route.source }}</span>
-              </p>
               <p>{{ navigationPlan.response_text || navigationPlan.planning_result?.broadcast_text }}</p>
             </div>
-            <div v-if="routeSteps.length" class="navigation-route-steps">
-              <div class="navigation-route-summary-head">
+
+            <div v-if="routeSteps.length" class="route-steps">
+              <div class="route-summary-head">
                 <strong>路线步骤</strong>
                 <span>共 {{ routeSteps.length }} 步</span>
               </div>
               <ol>
                 <li v-for="step in routeSteps" :key="step.index">
                   <strong>{{ step.index }}</strong>
-                  <span class="navigation-step-instruction">{{ step.instruction }}</span>
-                  <span v-if="step.distance_meters" class="navigation-step-distance">{{ formatDistance(step.distance_meters) }}</span>
+                  <span class="step-instruction">{{ step.instruction }}</span>
+                  <span v-if="step.distance_meters" class="step-distance">{{ formatDistance(step.distance_meters) }}</span>
                 </li>
               </ol>
             </div>
-            <p v-else-if="navigationVoiceResult?.response_text" class="navigation-route-voice-result">
-              {{ navigationVoiceResult.response_text }}
-            </p>
+            <p v-else-if="navigationVoiceResult?.response_text" class="control-note">{{ navigationVoiceResult.response_text }}</p>
           </div>
 
-          <p v-if="visionState?.lastGuidance">{{ visionState.lastGuidance }}</p>
-          <p v-if="!liveState?.deviceConnected" class="navigation-error">设备当前离线，导航模式已切换，但不会收到新的实时画面。</p>
-          <p v-else-if="visionState?.lastError" class="navigation-error">{{ visionState.lastError }}</p>
+          <div v-else-if="activeControlTab === 'obstacle'" class="control-tab-body">
+            <div class="control-section">
+              <div class="control-section-head">
+                <strong>导航辅助</strong>
+                <span>{{ visionStatusLabel }}</span>
+              </div>
+              <div class="action-grid">
+                <button type="button" class="action-btn" @click="emitVisionCommand('start_blind_navigation')">
+                  <CompassOutlined /><span>盲道</span>
+                </button>
+                <button type="button" class="action-btn" @click="emitVisionCommand('start_crossing')">
+                  <AimOutlined /><span>过马路</span>
+                </button>
+                <button type="button" class="action-btn" @click="emitVisionCommand('detect_traffic_light')">
+                  <ThunderboltOutlined /><span>红绿灯</span>
+                </button>
+                <button type="button" class="action-btn" @click="emitVisionCommand('stop')">
+                  <PauseCircleOutlined /><span>停止</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="control-section">
+              <div class="control-section-head">
+                <strong>障碍物快捷上报</strong>
+                <span>补充位置或类型</span>
+              </div>
+              <div class="report-box">
+                <a-input v-model:value="targetText" size="small" placeholder="补充障碍物位置或类型" @press-enter="findObject" />
+                <a-button type="primary" size="small" @click="findObject">
+                  <template #icon><SearchOutlined /></template>
+                  查找上报
+                </a-button>
+              </div>
+            </div>
+
+            <p v-if="!liveState?.deviceConnected" class="control-error">设备当前离线，导航模式已切换，但不会收到新的实时画面。</p>
+            <p v-else-if="visionState?.lastError" class="control-error">{{ visionState.lastError }}</p>
+          </div>
+
+          <div v-else class="control-tab-body">
+            <div class="control-section">
+              <div class="control-section-head">
+                <strong>工作模式</strong>
+                <span>导盲和回答问题二选一</span>
+              </div>
+              <div class="mode-switch-grid">
+                <button type="button" class="mode-choice" :class="{ 'mode-choice-active': activeMode === 'navigation' }" @click="changeMode('navigation')">
+                  <CompassOutlined class="mode-choice-icon" />
+                  <span>导盲</span>
+                  <small>盲道导航、过马路、红绿灯和找物品</small>
+                </button>
+                <button type="button" class="mode-choice" :class="{ 'mode-choice-active': activeMode === 'qa' }" @click="changeMode('qa')">
+                  <MessageOutlined class="mode-choice-icon" />
+                  <span>回答问题</span>
+                  <small>实时转写、AI 回复和语音播放</small>
+                </button>
+              </div>
+            </div>
+
+            <div class="control-section">
+              <div class="control-section-head">
+                <strong>语音交互</strong>
+                <span>说“聊天”或“导航模式”切换</span>
+              </div>
+              <div class="voice-mode-grid">
+                <div class="voice-mode-card" :class="{ 'voice-mode-card-active': voiceMode === 'chat' }">
+                  <MessageOutlined class="mode-choice-icon" />
+                  <strong>千问聊天</strong>
+                  <small>语音交给 Qwen Omni 多模态问答</small>
+                </div>
+                <div class="voice-mode-card" :class="{ 'voice-mode-card-active': voiceMode === 'navigation' }">
+                  <EnvironmentOutlined class="mode-choice-icon" />
+                  <strong>高德导航</strong>
+                  <small>语音交给高德路线规划并逐段播报</small>
+                </div>
+              </div>
+            </div>
+
+            <div v-if="showAudio" class="control-section">
+              <div class="control-section-head">
+                <strong>AI 语音</strong>
+                <span>AI 音频 {{ aiAudioChunksSeen }}</span>
+              </div>
+              <div class="audio-row">
+                <a-button type="primary" size="small" :disabled="audioUnlocked" @click="$emit('unlock-audio')">
+                  {{ audioUnlocked ? 'AI 语音已解锁' : '解锁 AI 语音' }}
+                </a-button>
+                <a-button size="small" @click="$emit('toggle-assistant-audio')">
+                  {{ assistantAudioEnabled ? 'AI 语音开启' : 'AI 语音静音' }}
+                </a-button>
+              </div>
+              <p class="control-note">{{ audioStatus }}</p>
+            </div>
+          </div>
         </div>
+      </div>
+    </div>
 
-        <div v-if="showQuality" class="quality-panel">
-          <div class="quality-panel-head">
-            <strong>链路质量</strong>
-            <a-tag>{{ qualityLabel }}</a-tag>
-          </div>
-          <div class="quality-grid">
-            <div class="quality-cell">
-              <span>FPS</span>
-              <strong>{{ numberValue(streamQuality?.videoFps, 1) }}</strong>
-            </div>
-            <div class="quality-cell">
-              <span>音频/s</span>
-              <strong>{{ numberValue(streamQuality?.audioChunksPerSecond, 1) }}</strong>
-            </div>
-            <div class="quality-cell">
-              <span>视频缺口</span>
-              <strong>{{ streamQuality?.videoSeqGaps ?? 0 }}</strong>
-            </div>
-            <div class="quality-cell">
-              <span>未完整帧</span>
-              <strong>{{ streamQuality?.videoIncompleteFrames ?? 0 }}</strong>
-            </div>
-          </div>
-        </div>
+    <div v-if="showQuality" class="metric-grid">
+      <div class="metric-cell">
+        <span>FPS</span>
+        <strong>{{ numberValue(streamQuality?.videoFps, 1) }}</strong>
+      </div>
+      <div class="metric-cell">
+        <span>音频/s</span>
+        <strong>{{ numberValue(streamQuality?.audioChunksPerSecond, 1) }}</strong>
+      </div>
+      <div class="metric-cell">
+        <span>视频缺口</span>
+        <strong>{{ streamQuality?.videoSeqGaps ?? 0 }}</strong>
+      </div>
+      <div class="metric-cell">
+        <span>未完整帧</span>
+        <strong>{{ streamQuality?.videoIncompleteFrames ?? 0 }}</strong>
+      </div>
+    </div>
 
-        <div v-if="showAudio" class="audio-control-panel">
-          <div class="audio-control-actions">
-            <a-button
-              type="primary"
-              size="small"
-              :disabled="audioUnlocked"
-              @click="$emit('unlock-audio')"
-            >
+    <div v-if="showSkillConsole" class="control-card">
+      <div class="control-tab-body">
+        <div class="control-section">
+          <div class="control-section-head">
+            <strong>AI 语音</strong>
+            <span>AI 音频 {{ aiAudioChunksSeen }}</span>
+          </div>
+          <div class="audio-row">
+            <a-button type="primary" size="small" :disabled="audioUnlocked" @click="$emit('unlock-audio')">
               {{ audioUnlocked ? 'AI 语音已解锁' : '解锁 AI 语音' }}
             </a-button>
             <a-button size="small" @click="$emit('toggle-assistant-audio')">
               {{ assistantAudioEnabled ? 'AI 语音开启' : 'AI 语音静音' }}
             </a-button>
-            <a-tag :color="aiAudioChunksSeen > 0 ? 'processing' : 'default'">
-              AI 音频 {{ aiAudioChunksSeen }}
-            </a-tag>
           </div>
-          <p>{{ audioStatus }}</p>
+          <p class="control-note">{{ audioStatus }}</p>
         </div>
       </div>
     </div>
 
-    <section v-if="showInfo" class="live-info-wrap">
-      <div class="info-table">
-        <div class="info-row">
-          <span>设备</span>
-          <strong>{{ deviceLabel }}</strong>
-        </div>
-        <div class="info-row">
-          <span>最近在线</span>
-          <strong>{{ lastSeenLabel }}</strong>
-        </div>
-        <div class="info-row">
-          <span>AI 模型</span>
-          <strong>{{ aiModelLabel }}</strong>
-        </div>
-        <div class="info-row">
-          <span>服务技能</span>
-          <strong>{{ skillLabel }}</strong>
-        </div>
-        <div class="info-row">
-          <span>运行说明</span>
-          <strong>{{ aiNote }}</strong>
-        </div>
-      </div>
-    </section>
-
-    <section v-if="showConsoles && !showConsolesUnderPreview" class="live-console-wrap live-console-grid" :class="consoleGridClass">
-      <div v-if="showTranscript" class="live-transcript-panel">
-        <div class="live-transcript-head">
+    <div v-if="showConsoles && !showConsolesUnderPreview" class="console-panels" :class="consolePanelClass">
+      <div v-if="showTranscript" class="panel-card">
+        <div class="panel-card-head">
           <strong>实时转写</strong>
-          <a-tag :color="liveTranscripts.length > 0 ? 'processing' : 'default'">{{ liveTranscripts.length }} lines</a-tag>
+          <a-tag :color="liveTranscripts.length > 0 ? 'processing' : 'default'">{{ liveTranscripts.length }} 条</a-tag>
         </div>
-        <div ref="transcriptRef" class="live-transcript-list">
-          <div v-if="transcriptItems.length === 0" class="live-transcript-empty">
-            暂无实时转写
-          </div>
+        <div ref="transcriptRef" class="panel-card-list">
+          <div v-if="transcriptItems.length === 0" class="panel-empty">暂无实时转写</div>
           <template v-else>
-            <article
-              v-for="item in transcriptItems"
-              :key="item.id"
-              class="live-transcript-item"
-              :class="`live-transcript-item-${item.role}`"
-            >
-              <div class="live-transcript-item-head">
+            <article v-for="item in transcriptItems" :key="item.id" class="transcript-item" :class="`transcript-item-${item.role}`">
+              <div class="transcript-item-head">
                 <span>{{ transcriptRoleLabel(item.role) }}</span>
                 <time>{{ formatTerminalTime(item.createdAt) }}</time>
               </div>
@@ -396,12 +351,12 @@
         </div>
       </div>
 
-      <div v-if="showSkillConsole" class="skill-terminal-panel live-skill-terminal-panel">
-        <div class="skill-terminal-head">
+      <div v-if="showSkillConsole" class="panel-card skill-panel">
+        <div class="panel-card-head">
           <strong>Live Skill Console</strong>
           <a-tag :color="skillEvents.length > 0 ? 'processing' : 'default'">{{ skillEvents.length }} calls</a-tag>
         </div>
-        <div ref="terminalRef" class="skill-terminal live-skill-terminal">
+        <div ref="terminalRef" class="skill-terminal">
           <div
             v-for="line in terminalLines"
             :key="line.id"
@@ -413,16 +368,16 @@
         </div>
       </div>
 
-      <div v-if="showVisionEvents" class="vision-event-panel">
-        <div class="live-transcript-head">
+      <div v-if="showVisionEvents" class="panel-card">
+        <div class="panel-card-head">
           <strong>导航事件</strong>
-          <a-tag :color="visionEvents.length > 0 ? 'processing' : 'default'">{{ visionEvents.length }} events</a-tag>
+          <a-tag :color="visionEvents.length > 0 ? 'processing' : 'default'">{{ visionEvents.length }} 条</a-tag>
         </div>
-        <div class="vision-event-list">
-          <div v-if="visionEvents.length === 0" class="live-transcript-empty">暂无导航事件</div>
+        <div class="panel-card-list">
+          <div v-if="visionEvents.length === 0" class="panel-empty">暂无导航事件</div>
           <template v-else>
-            <article v-for="event in recentVisionEvents" :key="visionEventKey(event)" class="vision-event-item">
-              <div>
+            <article v-for="event in recentVisionEvents" :key="visionEventKey(event)" class="vision-item">
+              <div class="vision-item-head">
                 <strong>{{ visionEventTitle(event) }}</strong>
                 <span>{{ formatTerminalTime(event.createdAt) }}</span>
               </div>
@@ -431,7 +386,30 @@
           </template>
         </div>
       </div>
-    </section>
+    </div>
+
+    <div v-if="showInfo" class="info-grid">
+      <div class="info-row">
+        <span>设备</span>
+        <strong>{{ deviceLabel }}</strong>
+      </div>
+      <div class="info-row">
+        <span>最近在线</span>
+        <strong>{{ lastSeenLabel }}</strong>
+      </div>
+      <div class="info-row">
+        <span>AI 模型</span>
+        <strong>{{ aiModelLabel }}</strong>
+      </div>
+      <div class="info-row">
+        <span>服务技能</span>
+        <strong>{{ skillLabel }}</strong>
+      </div>
+      <div class="info-row">
+        <span>运行说明</span>
+        <strong>{{ aiNote }}</strong>
+      </div>
+    </div>
 
     <a-alert
       v-if="dashboardError"
@@ -534,9 +512,21 @@ const props = defineProps({
     type: String,
     default: 'chat',
   },
+  gpsEnabled: {
+    type: Boolean,
+    default: false,
+  },
+  gpsStatus: {
+    type: String,
+    default: '未开启',
+  },
+  gpsFix: {
+    type: Object,
+    default: null,
+  },
 })
 
-const emit = defineEmits(['unlock-audio', 'toggle-assistant-audio', 'vision-command', 'mode-change', 'record-transcript'])
+const emit = defineEmits(['unlock-audio', 'toggle-assistant-audio', 'vision-command', 'mode-change', 'record-transcript', 'toggle-gps', 'navigate'])
 
 const deviceLabel = computed(() => {
   // 设备 hello 中的 deviceId/firmware 用于确认当前连接的是哪块板子。
@@ -584,20 +574,20 @@ let navigationStatusTimer = null
 const transcriptItems = computed(() => props.liveTranscripts.slice(-10))
 const recentVisionEvents = computed(() => props.visionEvents.slice(-8).reverse())
 const pageTitle = computed(() => {
-  // 页面标题由父级 page 控制，同一个组件复用在实时/诊断视图。
+  // 页面标题由父级 page 控制，同一个组件复用在实时/障碍物/诊断/系统设置视图。
   const titles = {
-    live: '实时交互',
-    navigation: '导盲控制',
-    ai: 'AI 日志',
+    live: '实时导航',
+    navigation: '障碍物管理',
+    ai: '系统设置',
     quality: '链路诊断',
   }
-  return titles[props.page] || '实时交互'
+  return titles[props.page] || '实时导航'
 })
 const pageDescription = computed(() => {
   const descriptions = {
-    live: '实时画面与实时转写在同一页，右侧选择导盲或回答问题。',
-    navigation: '控制盲道导航、过马路、红绿灯检测和物品查找。',
-    ai: '查看 AI 回复、技能调用和语音播放状态。',
+    live: '实时画面与转写同页，右侧导航控制与辅助设置。',
+    navigation: '盲道、过马路、红绿灯检测和物品查找。',
+    ai: 'AI 语音、技能调用与服务信息。',
     quality: '观察 UDP 分片、帧率、音频块速率和链路缺口。',
   }
   return descriptions[props.page] || descriptions.live
@@ -709,6 +699,75 @@ const activeModeLabel = computed(() => props.activeMode === 'navigation' ? '导�
 const voiceModeLabel = computed(() => (props.voiceMode === 'navigation' ? '高德导航' : '千问聊天'))
 
 const voiceModeTagColor = computed(() => (props.voiceMode === 'navigation' ? 'processing' : 'success'))
+
+// —— 暗色控制台新增：控制列、AR 覆盖层与路况统计 ——
+const activeControlTab = ref(props.page === 'navigation' ? 'obstacle' : 'nav')
+const controlTabs = [
+  { key: 'nav', label: '导航控制' },
+  { key: 'obstacle', label: '障碍物管理' },
+  { key: 'assist', label: '辅助设置' },
+]
+
+const showCameraColumn = computed(() => showPreview.value)
+const showControlColumn = computed(() => ['live', 'navigation'].includes(props.page))
+const showAR = computed(() => ['live', 'navigation'].includes(props.page))
+
+const arModeLabel = computed(() => (props.activeMode === 'navigation' ? '导航模式' : '问答模式'))
+
+const activeRoutePlanning = computed(() => {
+  return (
+    navigationPlan.value?.planning_result
+    || navigationVoiceResult.value?.planning_result
+    || navigationBroadcastResult.value?.planning_result
+    || null
+  )
+})
+
+const coveragePct = computed(() => {
+  const cov = activeRoutePlanning.value?.best_route?.blind_path_coverage_pct
+  return cov == null ? '--' : `${numberValue(cov, 0)}%`
+})
+
+const routeTurns = computed(() => (routeSteps.value.length ? `${routeSteps.value.length} 个` : '--'))
+
+const trafficLights = computed(() => {
+  const count = routeSteps.value.filter((step) => /红绿灯|信号灯|交通灯/.test(step.instruction || '')).length
+  return count ? `${count} 个` : '--'
+})
+
+const routeDuration = computed(() => {
+  const seconds = Number(activeRoutePlanning.value?.best_route?.total_duration_seconds || 0)
+  if (!seconds) return '--'
+  if (seconds >= 3600) {
+    const hours = Math.floor(seconds / 3600)
+    const minutes = Math.round((seconds % 3600) / 60)
+    return `${hours} 小时 ${minutes} 分`
+  }
+  if (seconds >= 60) return `${Math.round(seconds / 60)} 分钟`
+  return `${seconds} 秒`
+})
+
+const currentGuidance = computed(() => {
+  const last = props.visionState?.lastGuidance
+  if (last) return last
+  const latest = recentVisionEvents.value.find((item) => item.guidanceText)
+  return latest?.guidanceText || ''
+})
+
+const standaloneConsoleCount = computed(() => [showTranscript.value, showSkillConsole.value, showVisionEvents.value].filter(Boolean).length)
+const consolePanelClass = computed(() => `panels-count-${standaloneConsoleCount.value}`)
+
+watch(
+  () => props.page,
+  (page) => {
+    // 切换页面时重置右侧控制列默认标签：障碍物管理页默认展示“障碍物管理”。
+    if (page === 'navigation') {
+      activeControlTab.value = 'obstacle'
+    } else if (page === 'live') {
+      activeControlTab.value = 'nav'
+    }
+  },
+)
 
 const aiModelLabel = computed(() => {
   if (!props.aiState?.enabled) {

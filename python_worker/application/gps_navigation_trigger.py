@@ -45,6 +45,7 @@ class GpsNavigationTrigger:
         self._announced_index = -1
         self._last_position: Optional[Dict[str, Any]] = None
         self._paused = False
+        self._blind_path_coverage: Optional[float] = None
 
         # —— GPS 连接/容错状态 ——
         self._last_gps_ts: Optional[float] = None
@@ -54,7 +55,11 @@ class GpsNavigationTrigger:
         self._watchdog_stop = threading.Event()
 
     # ----- 路线注册 -----
-    def set_route(self, segments: List[Dict[str, Any]]) -> None:
+    def set_route(
+        self,
+        segments: List[Dict[str, Any]],
+        blind_path_coverage: Optional[float] = None,
+    ) -> None:
         """注册最新路线路段，并重置已播报进度。
 
         segments 每项需含 start/end 坐标与 instruction，例如::
@@ -66,6 +71,8 @@ class GpsNavigationTrigger:
                 "start": {"lng": 117.5, "lat": 34.8},
                 "end": {"lng": 117.51, "lat": 34.81},
             }
+
+        blind_path_coverage: 本条路线的盲道覆盖率（0~1），用于首次进入路线时播报。
         """
         cleaned: List[Dict[str, Any]] = []
         for seg in segments or []:
@@ -82,12 +89,14 @@ class GpsNavigationTrigger:
                     "start": {"lng": float(start["lng"]), "lat": float(start["lat"])},
                     "end": {"lng": float(end["lng"]), "lat": float(end["lat"])},
                     "distance_meters": float(seg.get("distance_meters") or 0.0),
+                    "road_type": str(seg.get("road_type") or ""),
                 }
             )
         with self._lock:
             self._segments = cleaned
             self._announced_index = -1
             self._last_position = None
+            self._blind_path_coverage = blind_path_coverage
         logger.info("GPS 导航触发已注册路线，共 %d 段", len(cleaned))
 
     def clear(self) -> None:
@@ -101,6 +110,7 @@ class GpsNavigationTrigger:
             self._last_position = None
             self._paused = False
             self._offroute_count = 0
+            self._blind_path_coverage = None
 
     def set_paused(self, paused: bool) -> None:
         """暂停/恢复导航播报（只暂停语音输出，不销毁路线与进度追踪）。
@@ -210,23 +220,32 @@ class GpsNavigationTrigger:
             return result
 
         to_announce: List[int] = []
+        first_announce = False
         with self._lock:
             if best_index > self._announced_index:
                 if self._paused:
                     # 暂停期间不推进、不播报，恢复后由下一次定位补齐当前路段。
                     result["paused"] = True
                     return result
+                first_announce = self._announced_index < 0
                 start_index = self._announced_index + 1
                 self._announced_index = best_index
                 to_announce = list(range(start_index, best_index + 1))
 
         if to_announce:
             steps = [
-                {"index": segments[i]["index"], "instruction": segments[i]["instruction"]}
+                {
+                    "index": segments[i]["index"],
+                    "instruction": segments[i]["instruction"],
+                    "road_type": segments[i].get("road_type", ""),
+                }
                 for i in to_announce
                 if 0 <= i < len(segments)
             ]
             result["triggered"] = steps
+            # 首次进入路线时，先播报本条路线的盲道覆盖情况
+            if first_announce:
+                self._broadcast_blind_coverage()
             for step in steps:
                 self._broadcast_step(step)
 
@@ -261,6 +280,24 @@ class GpsNavigationTrigger:
             self._broadcast.broadcast_steps([step])
         except Exception as exc:  # noqa: BLE001
             logger.error("GPS 导航触发播报失败: %s", exc)
+
+    def _broadcast_blind_coverage(self) -> None:
+        """首次进入路线时播报本条路线的盲道覆盖情况（后台线程）。"""
+        with self._lock:
+            coverage = self._blind_path_coverage
+        if coverage is None:
+            return
+        pct = coverage * 100
+        if pct >= 60:
+            text = f"本条路线盲道覆盖率达{pct:.0f}%，盲道连续性好，请沿盲道行走。"
+        elif pct >= 30:
+            text = f"本条路线约有{pct:.0f}%的路段铺有盲道，部分路段请借助人行道。"
+        else:
+            text = "本条路线盲道覆盖较少，请借助盲杖和路人协助。"
+        try:
+            self._broadcast.broadcast_text(text)
+        except Exception as exc:  # noqa: BLE001
+            logger.error("盲道覆盖情况播报失败: %s", exc)
 
     # ----- GPS 断连/健康检查 -----
     def is_gps_connected(self) -> bool:
