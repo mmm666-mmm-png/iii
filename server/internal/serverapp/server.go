@@ -477,6 +477,7 @@ func (s *server) newRouter() *gin.Engine {
 	router.POST("/api/ai/mode", s.handleAIMode)
 	router.POST("/api/navigation/plan", s.handleNavigationPlan)
 	router.POST("/api/navigation/voice", s.handleNavigationVoice)
+	router.POST("/api/navigation/broadcast", s.handleNavigationBroadcast)
 	router.GET("/api/navigation/status", s.handleNavigationStatus)
 	router.GET("/api/vision/status", s.handleVisionStatus)
 	router.POST("/api/vision/control", s.handleVisionControl)

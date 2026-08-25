@@ -3,20 +3,23 @@
 from __future__ import annotations
 
 import logging
+import threading
 from datetime import datetime
 from typing import Dict, Optional
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
-from audio_player import play_voice_text
+from audio_player import play_pcm_bytes, play_voice_text
 from application.dtos.route_dtos import RoutePlanningRequest, VoiceCommandRequest
+from application.route_broadcast_service import RouteBroadcastService
 from application.route_planning_service import RoutePlanningService
 from application.voice_interaction_service import VoiceInteractionService
 from domain.model.obstacle import Obstacle
 from domain.model.route import GeoPoint
 from infrastructure.config import AppConfig
 from infrastructure.in_memory_obstacle_repository import InMemoryObstacleRepository
+from infrastructure.tts_client import TtsClient
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +28,7 @@ router = APIRouter(prefix="/api", tags=["navigation"])
 _route_service: Optional[RoutePlanningService] = None
 _voice_service: Optional[VoiceInteractionService] = None
 _obstacle_repo: Optional[InMemoryObstacleRepository] = None
+_broadcast_service: Optional[RouteBroadcastService] = None
 
 
 def get_route_service() -> RoutePlanningService:
@@ -46,6 +50,13 @@ def get_obstacle_repo() -> InMemoryObstacleRepository:
     if _obstacle_repo is None:
         _obstacle_repo = InMemoryObstacleRepository()
     return _obstacle_repo
+
+
+def get_broadcast_service() -> RouteBroadcastService:
+    global _broadcast_service
+    if _broadcast_service is None:
+        _broadcast_service = RouteBroadcastService()
+    return _broadcast_service
 
 
 class PlanRouteBody(BaseModel):
@@ -76,6 +87,70 @@ class ObstacleReportBody(BaseModel):
     description: str = ""
 
 
+def _build_plan_request(body: PlanRouteBody):
+    """把 PlanRouteBody 解析成 RoutePlanningRequest。
+
+    返回 (request, request_context)；request 为 None 表示无需规划（例如缺
+    少目的地），此时 request_context 里会带 response_text。
+    """
+    request_context = {
+        "origin_desc": "",
+        "destination_desc": "",
+        "response_text": "",
+    }
+
+    if body.origin_text.strip() or body.destination_text.strip():
+        voice_service = get_voice_service()
+        request_info = voice_service.create_navigation_request(
+            origin_desc=body.origin_text,
+            destination_desc=body.destination_text,
+            user_id=body.user_id,
+            device_id=body.device_id,
+            preferences=body.preferences,
+        )
+        if not request_info.get("need_planning"):
+            return None, request_info
+
+        request_context.update(
+            {
+                "origin_desc": request_info.get("origin_desc", ""),
+                "destination_desc": request_info.get("destination_desc", ""),
+                "response_text": request_info.get("response_text", ""),
+            }
+        )
+        return request_info["navigation_request"], request_context
+
+    missing = [
+        name
+        for name, value in {
+            "origin_lng": body.origin_lng,
+            "origin_lat": body.origin_lat,
+            "destination_lng": body.destination_lng,
+            "destination_lat": body.destination_lat,
+        }.items()
+        if value is None
+    ]
+    if missing:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "origin_lng, origin_lat, destination_lng and destination_lat "
+                "are required when no place names are provided"
+            ),
+        )
+
+    request = RoutePlanningRequest(
+        origin_lng=body.origin_lng,
+        origin_lat=body.origin_lat,
+        destination_lng=body.destination_lng,
+        destination_lat=body.destination_lat,
+        user_id=body.user_id,
+        device_id=body.device_id,
+        preferences=body.preferences,
+    )
+    return request, request_context
+
+
 @router.post("/navigation/plan")
 def plan_route(body: PlanRouteBody):
     """Plan a route from either text places or raw coordinates.
@@ -88,62 +163,10 @@ def plan_route(body: PlanRouteBody):
         route_service = get_route_service()
         route_service.obstacle_repo = get_obstacle_repo()
 
-        request_context = {
-            "origin_desc": "",
-            "destination_desc": "",
-            "response_text": "",
-        }
-
-        if body.origin_text.strip() or body.destination_text.strip():
-            voice_service = get_voice_service()
-            request_info = voice_service.create_navigation_request(
-                origin_desc=body.origin_text,
-                destination_desc=body.destination_text,
-                user_id=body.user_id,
-                device_id=body.device_id,
-                preferences=body.preferences,
-            )
-            if not request_info.get("need_planning"):
-                _announce_navigation_voice(request_info.get("response_text", ""))
-                return {"success": True, "data": request_info}
-
-            request_context.update(
-                {
-                    "origin_desc": request_info.get("origin_desc", ""),
-                    "destination_desc": request_info.get("destination_desc", ""),
-                    "response_text": request_info.get("response_text", ""),
-                }
-            )
-            request = request_info["navigation_request"]
-        else:
-            missing = [
-                name
-                for name, value in {
-                    "origin_lng": body.origin_lng,
-                    "origin_lat": body.origin_lat,
-                    "destination_lng": body.destination_lng,
-                    "destination_lat": body.destination_lat,
-                }.items()
-                if value is None
-            ]
-            if missing:
-                raise HTTPException(
-                    status_code=400,
-                    detail=(
-                        "origin_lng, origin_lat, destination_lng and destination_lat "
-                        "are required when no place names are provided"
-                    ),
-                )
-
-            request = RoutePlanningRequest(
-                origin_lng=body.origin_lng,
-                origin_lat=body.origin_lat,
-                destination_lng=body.destination_lng,
-                destination_lat=body.destination_lat,
-                user_id=body.user_id,
-                device_id=body.device_id,
-                preferences=body.preferences,
-            )
+        request, request_context = _build_plan_request(body)
+        if request is None:
+            _announce_navigation_voice(request_context.get("response_text", ""))
+            return {"success": True, "data": request_context}
 
         planning_result = route_service.plan_route(request)
         _announce_navigation_voice(planning_result.broadcast_text)
@@ -196,6 +219,49 @@ def process_voice_command(body: VoiceCommandBody):
     except Exception as exc:
         logger.error("voice command failed: %s", exc, exc_info=True)
         raise HTTPException(status_code=500, detail=f"语音命令处理失败: {exc}")
+
+
+@router.post("/navigation/broadcast")
+def broadcast_route(body: PlanRouteBody):
+    """Plan a route and broadcast its Amap steps one by one via TTS.
+
+    规划流程阻塞执行，但语音合成与逐段播报放到后台线程，避免长时间占用
+    事件循环；响应会立即返回逐段步骤文本，供前端展示。
+    """
+    try:
+        route_service = get_route_service()
+        route_service.obstacle_repo = get_obstacle_repo()
+
+        request, request_context = _build_plan_request(body)
+        if request is None:
+            _announce_navigation_voice(request_context.get("response_text", ""))
+            return {"success": True, "data": request_context}
+
+        planning_result = route_service.plan_route(request)
+        _announce_navigation_voice(planning_result.broadcast_text)
+
+        steps = planning_result.turn_by_turn
+        get_broadcast_service().broadcast_steps(steps)
+
+        if not request_context["response_text"]:
+            request_context["response_text"] = planning_result.broadcast_text
+
+        return {
+            "success": True,
+            "data": {
+                **request_context,
+                "turn_by_turn": steps,
+                "route_guide_text": planning_result.route_guide_text,
+                "planning_result": planning_result.to_dict(),
+            },
+        }
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.error("route broadcast failed: %s", exc, exc_info=True)
+        raise HTTPException(status_code=500, detail=f"路线播报失败: {exc}")
 
 
 @router.post("/obstacle/report")
@@ -281,7 +347,26 @@ def _announce_navigation_voice(text: str) -> None:
     message = (text or "").strip()
     if not message:
         return
+
+    def _speak() -> None:
+        # 优先用 TTS 合成完整路线信息（总距离/预计时间/盲道覆盖率/障碍物等），
+        # 避免静态 wav 兜底时丢失路线详情。
+        try:
+            pcm = TtsClient().synthesize_pcm16_8k(message)
+            if pcm:
+                play_pcm_bytes(pcm)
+                return
+        except Exception:
+            logger.debug("navigation voice TTS failed, fallback to static wav", exc_info=True)
+
+        # TTS 不可用（无 API key 或网络失败）时，回退到静态 wav 匹配。
+        try:
+            play_voice_text(message)
+        except Exception:
+            logger.debug("navigation voice playback skipped", exc_info=True)
+
+    # 后台线程合成，避免阻塞规划接口响应；播放走音频队列，不阻塞线程。
     try:
-        play_voice_text(message)
+        threading.Thread(target=_speak, daemon=True).start()
     except Exception:
-        logger.debug("navigation voice playback skipped", exc_info=True)
+        logger.debug("navigation voice thread start failed", exc_info=True)

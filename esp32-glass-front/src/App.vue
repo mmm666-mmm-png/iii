@@ -108,6 +108,7 @@
               @unlock-audio="unlockAudio"
               @toggle-assistant-audio="toggleAssistantAudio"
               @vision-command="sendVisionCommand"
+              @record-transcript="recordLiveTranscript"
             />
           </main>
         </div>

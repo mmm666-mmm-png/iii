@@ -37,6 +37,7 @@ from .dtos.route_dtos import (
     RoutePlanningResult,
     RouteSummary,
 )
+from .route_broadcast_service import RouteBroadcastService
 
 logger = logging.getLogger(__name__)
 
@@ -106,17 +107,14 @@ class RoutePlanningService:
             f"障碍密度={best_route.obstacle_density:.1f}/km"
         )
 
-        # 5. 生成语音播报
+        # 5. 生成语音播报（统一使用中文，不再生成英文播报）
         broadcast_text = self.voice_client.generate_route_broadcast(
             best_route, ranked_routes, domain_request
         )
-        broadcast_text_en = self.voice_client.generate_route_broadcast_en(
-            best_route,
-            ranked_routes,
-            domain_request,
-            request.origin_name,
-            request.destination_name,
-        )
+
+        # 5.1 生成逐段路线播报（高德每一步导航指令）
+        turn_by_turn = RouteBroadcastService.build_turn_by_turn(best_route)
+        route_guide_text = RouteBroadcastService.build_guide_text(best_route)
 
         # 6. 组装结果
         return RoutePlanningResult(
@@ -124,7 +122,7 @@ class RoutePlanningService:
             best_route=RouteSummary.from_route(best_route),
             all_routes=[RouteSummary.from_route(r) for r in ranked_routes],
             broadcast_text=broadcast_text,
-            broadcast_text_en=broadcast_text_en,
+            broadcast_text_en=broadcast_text,
             score_breakdown=best_route.score_breakdown_dict(),
             used_amap=used_amap,
             used_blind_path_data=len(tactile_pavings) > 0,
@@ -137,6 +135,8 @@ class RoutePlanningService:
                 request.origin_name,
                 request.destination_name,
             ),
+            turn_by_turn=turn_by_turn,
+            route_guide_text=route_guide_text,
         )
 
     def get_route_detail(self, route_id: str, request: RoutePlanningRequest) -> Optional[dict]:

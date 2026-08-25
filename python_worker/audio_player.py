@@ -319,6 +319,53 @@ def play_audio_threadsafe(audio_key):
         print(f"[AUDIO] 队列满，丢弃: {audio_key}")
         pass
 
+def play_pcm_bytes(pcm_data: bytes, clear_stale: bool = True):
+    """播放一段已合成好的 8kHz mono PCM16（用于动态 TTS 播报）。
+
+    clear_stale=True 时沿用实时提示的清队列策略，保证最新语音优先；
+    动态播报与预录语音共用同一条下行音频链路。
+    """
+    global _audio_queue, _audio_priority
+
+    if not pcm_data:
+        return
+    if not _initialized:
+        initialize_audio_system()
+
+    if clear_stale:
+        queue_size = _audio_queue.qsize()
+        with _playing_lock:
+            currently_playing = _is_playing
+        if (queue_size > 0 and not currently_playing) or (queue_size > 1 and currently_playing):
+            print(f"[AUDIO] 清空队列（当前{queue_size}个），播放最新语音")
+            _audio_queue = queue.PriorityQueue(maxsize=10)
+
+    _audio_priority += 1
+    try:
+        _audio_queue.put_nowait((_audio_priority, pcm_data))
+    except queue.Full:
+        print("[AUDIO] 队列满，丢弃动态播报片段")
+
+def play_pcm_sequence(pcm_list):
+    """顺序播放一串 8kHz mono PCM16（用于逐段路线播报），不丢段。"""
+    global _audio_priority
+
+    if not pcm_list:
+        return
+    if not _initialized:
+        initialize_audio_system()
+
+    for pcm_data in pcm_list:
+        if not pcm_data:
+            continue
+        _audio_priority += 1
+        try:
+            # 使用阻塞 put：逐段播报要求按顺序完整播放，不因队列满而丢段。
+            _audio_queue.put((_audio_priority, pcm_data), timeout=30)
+        except queue.Full:
+            print("[AUDIO] 队列满，后续播报片段被丢弃")
+            break
+
 # 全局语音节流
 _last_voice_time = 0
 _last_voice_text = ""

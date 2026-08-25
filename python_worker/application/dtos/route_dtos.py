@@ -96,6 +96,8 @@ class RoutePlanningResult:
     destination_name: str = ""
     navigation_uri: str = ""
     broadcast_text_en: str = ""
+    turn_by_turn: List[Dict] = field(default_factory=list)
+    route_guide_text: str = ""
 
     def to_dict(self) -> dict:
         return {
@@ -119,6 +121,8 @@ class RoutePlanningResult:
                 "destination_name": self.destination_name,
             },
             "broadcast_text_en": self.broadcast_text_en,
+            "turn_by_turn": self.turn_by_turn,
+            "route_guide_text": self.route_guide_text,
         }
 
 

@@ -278,7 +278,7 @@ func (s *server) enqueueNavigationVoiceForDevice(text string) {
 		return
 	}
 
-	chunk, found, err := s.navigationVoice.chunkForText(text)
+	chunk, found, err := s.navigationVoice.chunkForText(resolveNavigationVoiceFallback(text))
 	if err != nil {
 		log.Printf("navigation voice load failed for %q: %v", text, err)
 		return
@@ -302,4 +302,72 @@ func (s *server) enqueueNavigationVoiceForDevice(text string) {
 			log.Printf("device playback queue full, dropping navigation voice %q", text)
 		}
 	}
+}
+
+// enqueueNavigationVoiceSequenceForDevice 把一串导航指令按顺序下发到设备扬声器，
+// 用于逐段路线播报。仅保留能命中预录语音的指令，避免队列被大量无效片段占满。
+func (s *server) enqueueNavigationVoiceSequenceForDevice(texts []string) {
+	if s.navigationVoice == nil || len(texts) == 0 {
+		return
+	}
+
+	chunks := make([]devicePlaybackChunk, 0, len(texts))
+	for _, text := range texts {
+		text = strings.TrimSpace(text)
+		if text == "" {
+			continue
+		}
+		chunk, found, err := s.navigationVoice.chunkForText(resolveNavigationVoiceFallback(text))
+		if err != nil {
+			log.Printf("navigation voice load failed for %q: %v", text, err)
+			continue
+		}
+		if !found || chunk.payload == nil {
+			continue
+		}
+		chunks = append(chunks, chunk)
+	}
+	if len(chunks) == 0 {
+		return
+	}
+
+	s.clearDevicePlaybackQueue()
+	for _, chunk := range chunks {
+		select {
+		case s.devicePlaybackCh <- chunk:
+		default:
+			log.Printf("device playback queue full, dropping navigation voice sequence")
+			return
+		}
+	}
+}
+
+// resolveNavigationVoiceFallback 把高德路线规划生成的动态播报文本映射到
+// 预录导航语音。动态文本包含距离/时间/盲道覆盖率，无法逐字命中 wav，
+// 因此统一降级到通用的“已为您规划好路线”提示。
+func resolveNavigationVoiceFallback(text string) string {
+	t := strings.TrimSpace(text)
+	t = strings.TrimPrefix(t, "[导航]")
+	t = strings.TrimSpace(t)
+
+	if strings.Contains(t, "已为您规划好") {
+		return "已为您规划好路线，请确认安全后出发。"
+	}
+
+	// 高德转弯指令通常是“沿XX路步行…右转进入XX路”这类长句，
+	// 按关键词降级到预录的短指令，保证设备端能播报关键导航动作。
+	if strings.Contains(t, "到达") || strings.Contains(t, "终点") {
+		return "已到达目标，引导结束。"
+	}
+	if strings.Contains(t, "右转") {
+		return "右转"
+	}
+	if strings.Contains(t, "左转") {
+		return "左转"
+	}
+	if strings.Contains(t, "直行") {
+		return "保持直行"
+	}
+
+	return t
 }

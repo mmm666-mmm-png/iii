@@ -202,6 +202,10 @@
                 <template #icon><SoundOutlined /></template>
                 语音解析
               </a-button>
+              <a-button size="small" :loading="navigationBroadcastBusy" @click="broadcastRoute">
+                <template #icon><SoundOutlined /></template>
+                播报路线
+              </a-button>
               <a-button v-if="navigationLaunchUri" size="small" @click="openNavigationUri">
                 <template #icon><EnvironmentOutlined /></template>
                 打开高德
@@ -244,9 +248,19 @@
                 <span v-if="navigationPlan.planning_result?.best_route?.source"> / {{ navigationPlan.planning_result.best_route.source }}</span>
               </p>
               <p>{{ navigationPlan.response_text || navigationPlan.planning_result?.broadcast_text }}</p>
-              <p v-if="navigationPlan.planning_result?.broadcast_text_en" class="navigation-route-voice-result">
-                {{ navigationPlan.planning_result.broadcast_text_en }}
-              </p>
+            </div>
+            <div v-if="routeSteps.length" class="navigation-route-steps">
+              <div class="navigation-route-summary-head">
+                <strong>路线步骤</strong>
+                <span>共 {{ routeSteps.length }} 步</span>
+              </div>
+              <ol>
+                <li v-for="step in routeSteps" :key="step.index">
+                  <strong>{{ step.index }}</strong>
+                  <span class="navigation-step-instruction">{{ step.instruction }}</span>
+                  <span v-if="step.distance_meters" class="navigation-step-distance">{{ formatDistance(step.distance_meters) }}</span>
+                </li>
+              </ol>
             </div>
             <p v-else-if="navigationVoiceResult?.response_text" class="navigation-route-voice-result">
               {{ navigationVoiceResult.response_text }}
@@ -493,7 +507,7 @@ const props = defineProps({
   },
 })
 
-const emit = defineEmits(['unlock-audio', 'toggle-assistant-audio', 'vision-command', 'mode-change'])
+const emit = defineEmits(['unlock-audio', 'toggle-assistant-audio', 'vision-command', 'mode-change', 'record-transcript'])
 
 const deviceLabel = computed(() => {
   // 设备 hello 中的 deviceId/firmware 用于确认当前连接的是哪块板子。
@@ -517,6 +531,8 @@ const navigationPlan = ref(null)
 const navigationVoiceResult = ref(null)
 const navigationBusy = ref(false)
 const navigationVoiceBusy = ref(false)
+const navigationBroadcastBusy = ref(false)
+const navigationBroadcastResult = ref(null)
 const navigationError = ref('')
 const lastNavigationSpeechKey = ref('')
 const navigationLaunchUri = computed(() => {
@@ -525,6 +541,14 @@ const navigationLaunchUri = computed(() => {
     || navigationVoiceResult.value?.planning_result?.navigation?.uri
     || ''
   )
+})
+const routeSteps = computed(() => {
+  const planning = navigationPlan.value?.planning_result
+    || navigationVoiceResult.value?.planning_result
+    || navigationBroadcastResult.value?.planning_result
+  const steps = planning?.turn_by_turn
+    || navigationBroadcastResult.value?.turn_by_turn
+  return Array.isArray(steps) ? steps : []
 })
 const lastAutoNavigationTranscriptId = ref('')
 let navigationStatusTimer = null
@@ -915,6 +939,46 @@ async function submitNavigationVoice() {
   }
 }
 
+async function broadcastRoute() {
+  const origin = originText.value.trim()
+  const destination = destinationText.value.trim()
+  if (!origin && !destination) {
+    navigationError.value = '请先填写起点或终点'
+    return
+  }
+
+  navigationBroadcastBusy.value = true
+  navigationError.value = ''
+  try {
+    const body = await requestJSON('/api/navigation/broadcast', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        origin_text: origin,
+        destination_text: destination,
+      }),
+    })
+    const data = body.data || {}
+    navigationBroadcastResult.value = data
+    if (data.planning_result) {
+      navigationPlan.value = {
+        origin_desc: data.origin_desc || origin,
+        destination_desc: data.destination_desc || destination,
+        response_text: data.response_text,
+        planning_result: data.planning_result,
+      }
+      navigationVoiceResult.value = data
+    }
+    syncNavigationFields(data)
+    appendNavigationTranscript(data)
+    await refreshNavigationStatus()
+  } catch (error) {
+    navigationError.value = error instanceof Error ? error.message : '路线播报失败'
+  } finally {
+    navigationBroadcastBusy.value = false
+  }
+}
+
 async function dispatchNavigationVoice(text, { auto = false, transcriptId = '' } = {}) {
   const commandText = (text || '').trim()
   if (!commandText) {
@@ -969,11 +1033,11 @@ async function dispatchNavigationVoice(text, { auto = false, transcriptId = '' }
 }
 
 function appendNavigationTranscript(data = {}) {
-  const text = data.planning_result?.broadcast_text_en || data.response_text || data.planning_result?.broadcast_text || ''
+  const text = data.planning_result?.broadcast_text || data.response_text || ''
   if (!text) {
     return
   }
-  recordLiveTranscript({
+  emit('record-transcript', {
     role: 'assistant',
     text: `[导航] ${text}`,
     final: true,
@@ -982,7 +1046,7 @@ function appendNavigationTranscript(data = {}) {
 }
 
 function speakNavigationBroadcast(data = {}) {
-  const text = data.planning_result?.broadcast_text_en || data.response_text || data.planning_result?.broadcast_text || ''
+  const text = data.planning_result?.broadcast_text || data.response_text || ''
   const speechKey = `${data.planning_result?.request_id || ''}-${text}`
   if (!text || speechKey === lastNavigationSpeechKey.value) {
     return
@@ -996,13 +1060,13 @@ function speakNavigationBroadcast(data = {}) {
   try {
     window.speechSynthesis.cancel()
     const utterance = new SpeechSynthesisUtterance(text)
-    utterance.lang = 'en-US'
+    utterance.lang = 'zh-CN'
     utterance.rate = 0.96
     utterance.pitch = 1
     const voices = window.speechSynthesis.getVoices?.() || []
-    const englishVoice = voices.find((voice) => String(voice.lang || '').toLowerCase().startsWith('en'))
-    if (englishVoice) {
-      utterance.voice = englishVoice
+    const chineseVoice = voices.find((voice) => String(voice.lang || '').toLowerCase().startsWith('zh'))
+    if (chineseVoice) {
+      utterance.voice = chineseVoice
     }
     window.speechSynthesis.speak(utterance)
   } catch {

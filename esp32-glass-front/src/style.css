@@ -712,6 +712,46 @@ select {
   line-height: 1.62;
 }
 
+.navigation-route-steps {
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid #e3ebf4;
+  border-radius: 8px;
+  background: #f9fbfe;
+}
+
+.navigation-route-steps ol {
+  margin: 0;
+  padding-left: 22px;
+  display: grid;
+  gap: 8px;
+}
+
+.navigation-route-steps li {
+  padding-left: 4px;
+  color: rgba(17, 24, 39, 0.78);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.navigation-route-steps li strong {
+  display: inline-block;
+  min-width: 22px;
+  margin-right: 6px;
+  color: #2f6fed;
+  font-weight: 760;
+}
+
+.navigation-step-instruction {
+  margin-right: 8px;
+}
+
+.navigation-step-distance {
+  color: rgba(17, 24, 39, 0.48);
+  font-size: 12px;
+}
+
 .quality-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
