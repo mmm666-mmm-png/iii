@@ -3,6 +3,7 @@ package serverapp
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -18,9 +19,13 @@ const navigationRequestTimeout = 90 * time.Second
 // navigationWorkerResultData 是 Python worker 导航接口返回的 data 字段，
 // 用于从代理响应中提取需要下发到设备扬声器的播报文本。
 type navigationWorkerResultData struct {
-	ResponseText   string                    `json:"response_text"`
-	PlanningResult *navigationPlanningResult `json:"planning_result"`
-	TurnByTurn     []navigationTurnStep      `json:"turn_by_turn"`
+	ResponseText    string                    `json:"response_text"`
+	PlanningResult  *navigationPlanningResult `json:"planning_result"`
+	TurnByTurn      []navigationTurnStep      `json:"turn_by_turn"`
+	AudioBase64     string                    `json:"audio_base64"`
+	AudioSampleRate int                       `json:"audio_sample_rate"`
+	AudioChannels   int                       `json:"audio_channels"`
+	AudioBits       int                       `json:"audio_bits_per_sample"`
 }
 
 type navigationPlanningResult struct {
@@ -33,16 +38,25 @@ type navigationTurnStep struct {
 }
 
 func (s *server) handleNavigationPlan(c *gin.Context) {
+	if s.ai != nil {
+		s.ai.InterruptAudio()
+	}
 	body := s.proxyWorkerJSON(c, http.MethodPost, "/api/navigation/plan")
 	s.playNavigationSummaryFromResponse(body)
 }
 
 func (s *server) handleNavigationVoice(c *gin.Context) {
+	if s.ai != nil {
+		s.ai.InterruptAudio()
+	}
 	body := s.proxyWorkerJSON(c, http.MethodPost, "/api/navigation/voice")
 	s.playNavigationSummaryFromResponse(body)
 }
 
 func (s *server) handleNavigationBroadcast(c *gin.Context) {
+	if s.ai != nil {
+		s.ai.InterruptAudio()
+	}
 	body := s.proxyWorkerJSON(c, http.MethodPost, "/api/navigation/broadcast")
 	s.playNavigationVoiceFromResponse(body)
 }
@@ -84,6 +98,7 @@ func (s *server) playNavigationVoiceFromResponse(body []byte) {
 		return
 	}
 
+	audioChunk := navigationAudioChunk(payload.Data)
 	// 播报列表：先播路线确认，再按顺序播报高德每一步转弯指令。
 	texts := []string{text}
 	for _, step := range payload.Data.TurnByTurn {
@@ -91,7 +106,14 @@ func (s *server) playNavigationVoiceFromResponse(body []byte) {
 			texts = append(texts, instruction)
 		}
 	}
-	s.enqueueNavigationVoiceSequenceForDevice(texts)
+	if audioChunk != nil {
+		s.enqueueNavigationVoiceSequenceWithAudioForDevice(
+			*audioChunk,
+			s.navigationVoiceChunksForTexts(texts[1:]),
+		)
+	} else {
+		s.enqueueNavigationVoiceSequenceForDevice(texts)
+	}
 }
 
 func (s *server) playNavigationSummaryFromResponse(body []byte) {
@@ -112,7 +134,28 @@ func (s *server) playNavigationSummaryFromResponse(body []byte) {
 		text = payload.Data.ResponseText
 	}
 	if strings.TrimSpace(text) != "" {
-		s.enqueueNavigationVoiceForDevice(text)
+		if audioChunk := navigationAudioChunk(payload.Data); audioChunk != nil {
+			s.enqueueNavigationVoiceSequenceWithAudioForDevice(*audioChunk, nil)
+		} else {
+			s.enqueueNavigationVoiceForDevice(text)
+		}
+	}
+}
+
+func navigationAudioChunk(data navigationWorkerResultData) *devicePlaybackChunk {
+	if strings.TrimSpace(data.AudioBase64) == "" || data.AudioSampleRate <= 0 ||
+		data.AudioChannels != 1 || data.AudioBits != 16 {
+		return nil
+	}
+	payload, err := base64.StdEncoding.DecodeString(data.AudioBase64)
+	if err != nil || len(payload) == 0 {
+		return nil
+	}
+	return &devicePlaybackChunk{
+		sampleRate:    data.AudioSampleRate,
+		channels:      data.AudioChannels,
+		bitsPerSample: data.AudioBits,
+		payload:       payload,
 	}
 }
 
@@ -189,6 +232,9 @@ func (s *server) proxyWorkerJSON(c *gin.Context, method, path string) []byte {
 func (s *server) callNavigationVoice(ctx context.Context, text string) (map[string]any, string, error) {
 	if s.vision == nil {
 		return nil, "", fmt.Errorf("vision worker is not configured")
+	}
+	if s.ai != nil {
+		s.ai.InterruptAudio()
 	}
 
 	body, err := json.Marshal(map[string]string{"text": text})

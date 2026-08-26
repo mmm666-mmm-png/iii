@@ -270,6 +270,12 @@ async function refreshStatus(options = {}) {
   try {
     const state = await fetchJSON('/api/status')
     liveState.value = state
+    if (state?.ai) {
+      aiState.value = state.ai
+      if (state.ai.voiceMode === 'chat' || state.ai.voiceMode === 'navigation') {
+        voiceMode.value = state.ai.voiceMode
+      }
+    }
     if (state?.vision) {
       liveVisionState.value = state.vision
       syncWorkModeFromState({ vision: state.vision })
@@ -297,8 +303,7 @@ async function refreshStatus(options = {}) {
 }
 
 async function setAssistantMode(mode, options = {}) {
-  // Go 后端用 AI mode 控制 DashScope 是否接收麦克风输入。
-  // navigation 模式会暂停 AI 问答，qa 模式恢复普通问答。
+  // 工作模式不关闭麦克风；导盲模式仍需要识别语音控制命令和用户问题。
   if (!['navigation', 'qa'].includes(mode)) return false
   try {
     const response = await fetch(apiUrl('/api/ai/mode'), {
@@ -312,6 +317,9 @@ async function setAssistantMode(mode, options = {}) {
     }
     if (body.ai) {
       aiState.value = body.ai
+    }
+    if (body.ai?.voiceMode === 'chat' || body.ai?.voiceMode === 'navigation') {
+      voiceMode.value = body.ai.voiceMode
     }
     return true
   } catch (error) {
@@ -370,7 +378,7 @@ async function switchWorkMode(mode) {
   window.localStorage.setItem('ai-glass-work-mode', mode)
 
   if (mode === 'navigation') {
-    await setAssistantMode('navigation', { silent: true })
+    await setAssistantMode('qa', { silent: true })
     const ok = await sendVisionCommand({ command: 'start_blind_navigation' }, { syncMode: false })
     if (!ok) {
       activeWorkMode.value = previousMode
@@ -471,6 +479,12 @@ function connectLiveSocket() {
     if (payload?.type === 'server_state') {
       // server_state 是 Go 后端周期心跳，包含设备、质量、视觉摘要。
       liveState.value = payload
+      if (payload.ai) {
+        aiState.value = payload.ai
+        if (payload.ai.voiceMode === 'chat' || payload.ai.voiceMode === 'navigation') {
+          voiceMode.value = payload.ai.voiceMode
+        }
+      }
       if (payload.vision) {
         liveVisionState.value = payload.vision
         syncWorkModeFromState({ vision: payload.vision })

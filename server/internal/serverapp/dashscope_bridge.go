@@ -175,10 +175,7 @@ func (b *dashScopeBridge) snapshot() aiStateMessage {
 }
 
 func (b *dashScopeBridge) ingestPacket(meta *PacketMeta, payload []byte) {
-	// 导航模式暂停 AI 时，音视频仍给前端/视觉 worker，但不送入 DashScope。
-	if b.isInputPaused() {
-		return
-	}
+	// 导盲模式仍需把麦克风送入 DashScope 生成转写；回答是否允许由事件处理层控制。
 	switch meta.Type {
 	case "audio":
 		b.ingestAudio(meta, payload)
@@ -243,6 +240,9 @@ func (b *dashScopeBridge) run() {
 		}
 
 		err = b.readLoop(conn)
+		if err != nil {
+			log.Printf("DashScope bridge disconnected: %v", err)
+		}
 		b.markDisconnected(conn, err)
 		time.Sleep(dashScopeReconnectDelay)
 	}
@@ -288,9 +288,6 @@ func (b *dashScopeBridge) readLoop(conn *websocket.Conn) error {
 func (b *dashScopeBridge) audioLoop() {
 	// 音频发送循环：把设备上行 PCM 转成 DashScope 需要的 16k mono PCM。
 	for chunk := range b.audioCh {
-		if b.isInputPaused() {
-			continue
-		}
 		if chunk.channels != 1 || chunk.bits != 16 {
 			continue
 		}
@@ -359,8 +356,10 @@ func (b *dashScopeBridge) handleEvent(payload []byte) {
 		}
 		return
 	}
-	if b.isInputPaused() && eventType != "error" {
-		// 导航暂停时忽略普通模型事件，只保留错误用于诊断。
+	if b.isInputPaused() && eventType != "error" &&
+		eventType != "conversation.item.input_audio_transcription.completed" &&
+		eventType != "input_audio_buffer.speech_started" {
+		// 导盲模式只保留 ASR 转写和本地模式切换，不允许模型回答或下发 AI 音频。
 		return
 	}
 
@@ -535,6 +534,9 @@ func (b *dashScopeBridge) handleInputTranscriptCompleted(event map[string]any) {
 
 	intent, ok := b.server.skillIntentFromTranscript(transcript)
 	if !ok {
+		return
+	}
+	if b.isInputPaused() && intent.Name != "switch_to_chat" {
 		return
 	}
 
@@ -834,6 +836,18 @@ func (b *dashScopeBridge) setInputPaused(paused bool) {
 		b.suppressAssistantResponseID = ""
 	}
 	b.stateMu.Unlock()
+	if !paused {
+		// 丢弃暂停期间残留的麦克风片段，恢复后从实时语音重新开始识别。
+		for {
+			select {
+			case <-b.audioCh:
+			default:
+				goto audioQueueDrained
+			}
+		}
+	}
+
+audioQueueDrained:
 
 	if paused {
 		b.discardPendingAudio()

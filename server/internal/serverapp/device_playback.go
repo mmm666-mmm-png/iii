@@ -98,6 +98,9 @@ func (s *server) enqueueAIAudioForDevice(meta *PacketMeta, payload []byte) {
 	if meta.SampleRate <= 0 || meta.Channels != 1 || meta.BitsPerSample != 16 {
 		return
 	}
+	if s.ai != nil && s.ai.isInputPaused() {
+		return
+	}
 
 	chunk := devicePlaybackChunk{
 		sampleRate:    meta.SampleRate,
@@ -106,6 +109,11 @@ func (s *server) enqueueAIAudioForDevice(meta *PacketMeta, payload []byte) {
 		payload:       append([]byte(nil), payload...),
 	}
 
+	s.devicePlaybackQueueMu.Lock()
+	defer s.devicePlaybackQueueMu.Unlock()
+	if s.ai != nil && s.ai.isInputPaused() {
+		return
+	}
 	select {
 	case s.devicePlaybackCh <- chunk:
 	default:
@@ -123,6 +131,8 @@ func (s *server) enqueueAIAudioForDevice(meta *PacketMeta, payload []byte) {
 }
 
 func (s *server) clearDevicePlaybackQueue() {
+	s.devicePlaybackQueueMu.Lock()
+	defer s.devicePlaybackQueueMu.Unlock()
 	for {
 		select {
 		case <-s.devicePlaybackCh:

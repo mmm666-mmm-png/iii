@@ -312,6 +312,17 @@ func (s *server) enqueueNavigationVoiceSequenceForDevice(texts []string) {
 		return
 	}
 
+	s.enqueueNavigationVoiceSequenceWithAudioForDevice(
+		devicePlaybackChunk{},
+		s.navigationVoiceChunksForTexts(texts),
+	)
+}
+
+func (s *server) navigationVoiceChunksForTexts(texts []string) []devicePlaybackChunk {
+	if s.navigationVoice == nil || len(texts) == 0 {
+		return nil
+	}
+
 	chunks := make([]devicePlaybackChunk, 0, len(texts))
 	for _, text := range texts {
 		text = strings.TrimSpace(text)
@@ -328,13 +339,21 @@ func (s *server) enqueueNavigationVoiceSequenceForDevice(texts []string) {
 		}
 		chunks = append(chunks, chunk)
 	}
-	if len(chunks) == 0 {
+	return chunks
+}
+
+func (s *server) enqueueNavigationVoiceSequenceWithAudioForDevice(first devicePlaybackChunk, chunks []devicePlaybackChunk) {
+	allChunks := make([]devicePlaybackChunk, 0, len(chunks)+1)
+	if len(first.payload) > 0 {
+		allChunks = append(allChunks, first)
+	}
+	allChunks = append(allChunks, chunks...)
+	if len(allChunks) == 0 {
 		return
 	}
-
 	s.clearDevicePlaybackQueue()
-	for index, chunk := range chunks {
-		if index < len(chunks)-1 {
+	for index, chunk := range allChunks {
+		if index < len(allChunks)-1 {
 			chunk.pauseAfter = 700 * time.Millisecond
 		}
 		select {

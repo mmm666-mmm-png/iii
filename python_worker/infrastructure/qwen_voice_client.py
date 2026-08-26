@@ -152,10 +152,35 @@ class QwenVoiceClient:
                 temperature=0.7,
                 max_tokens=300,
             )
-            return resp.choices[0].message.content.strip()
+            return self._complete_route_broadcast(
+                resp.choices[0].message.content.strip(), best_route, condition
+            )
         except Exception as e:
             logger.error(f"大模型播报生成失败: {e}")
             return self._fallback_broadcast(best_route, all_routes)
+
+    @staticmethod
+    def _complete_route_broadcast(text: str, route: Route, condition: Dict) -> str:
+        """补齐模型可能遗漏的高德和盲道关键信息，供两端共用同一段播报。"""
+        parts = [str(text or "").strip().rstrip("。！？!?.")]
+        blind_pct = route.blind_path_coverage * 100
+        if "盲道覆盖" not in parts[0]:
+            if blind_pct >= 60:
+                parts.append(f"盲道覆盖率{blind_pct:.1f}%，盲道连续性较好，适合沿盲道行走")
+            elif blind_pct >= 30:
+                parts.append(f"盲道覆盖率{blind_pct:.1f}%，部分路段请借助人行道")
+            else:
+                parts.append(f"盲道覆盖率{blind_pct:.1f}%，覆盖不足，建议使用盲杖辅助行走")
+        if "红绿灯" not in parts[0]:
+            parts.append(
+                f"全程{'无' if condition['traffic_light_count'] == 0 else '有'}红绿灯"
+                + ("" if condition["traffic_light_count"] == 0 else f"{condition['traffic_light_count']}处")
+            )
+        if "转弯" not in parts[0]:
+            parts.append(f"转弯{condition['turn_count']}次")
+        if "建议" not in parts[0]:
+            parts.append("建议白天出行，确保安全")
+        return "。".join(part for part in parts if part) + "。"
 
     @staticmethod
     def _route_condition_summary(route: Route) -> Dict:

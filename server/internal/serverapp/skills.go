@@ -448,6 +448,7 @@ func switchToNavigationSkill(server *server) skillDefinition {
 				return nil, "", fmt.Errorf("server is not configured")
 			}
 			server.setVoiceMode("navigation")
+			server.setAIInputPaused(true)
 			return map[string]any{"voiceMode": "navigation"}, "已切换到高德导航模式，请告诉我出发地和目的地。", nil
 		},
 	}
@@ -786,14 +787,6 @@ func (s *server) skillIntentFromTranscript(text string) (skillIntent, bool) {
 	}
 	if intent, ok := s.skills.matchIntent(text); ok {
 		return intent, true
-	}
-	// 高德导航模式下，未命中技能的普通语音也当作导航口令处理，
-	// 这样用户切到导航模式后可以说“东湖公园”之类的简短目的地。
-	if s.getVoiceMode() == "navigation" {
-		trimmed := strings.TrimSpace(text)
-		if trimmed != "" {
-			return skillIntent{Name: "navigation_route", Args: map[string]any{"text": trimmed}}, true
-		}
 	}
 	return skillIntent{}, false
 }

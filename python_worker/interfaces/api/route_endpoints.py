@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import base64
 import logging
 import threading
 from datetime import datetime
@@ -187,6 +188,7 @@ def plan_route(body: PlanRouteBody):
             "success": True,
             "data": {
                 **request_context,
+                **_navigation_audio_payload(planning_result.broadcast_text),
                 "planning_result": planning_result.to_dict(),
             },
         }
@@ -219,6 +221,7 @@ def process_voice_command(body: VoiceCommandBody):
             route_service.obstacle_repo = get_obstacle_repo()
             planning_result = route_service.plan_route(result["navigation_request"])
             result["planning_result"] = planning_result.to_dict()
+            result.update(_navigation_audio_payload(planning_result.broadcast_text))
             get_gps_trigger().set_route(
                 planning_result.segments,
                 blind_path_coverage=planning_result.best_route.blind_path_coverage,
@@ -260,6 +263,7 @@ def broadcast_route(body: PlanRouteBody):
             "success": True,
             "data": {
                 **request_context,
+                **_navigation_audio_payload(planning_result.broadcast_text),
                 "turn_by_turn": steps,
                 "route_guide_text": planning_result.route_guide_text,
                 "planning_result": planning_result.to_dict(),
@@ -404,3 +408,22 @@ def _announce_navigation_voice(text: str) -> None:
         threading.Thread(target=_speak, daemon=True).start()
     except Exception:
         logger.debug("navigation voice thread start failed", exc_info=True)
+
+
+def _navigation_audio_payload(text: str) -> dict:
+    """把完整路线摘要合成为设备端可播放的 PCM 音频。"""
+    message = (text or "").strip()
+    if not message:
+        return {}
+    try:
+        pcm = TtsClient().synthesize_pcm16_8k(message)
+        if pcm:
+            return {
+                "audio_base64": base64.b64encode(pcm).decode("ascii"),
+                "audio_sample_rate": 8000,
+                "audio_channels": 1,
+                "audio_bits_per_sample": 16,
+            }
+    except Exception:
+        logger.debug("navigation response TTS failed", exc_info=True)
+    return {}

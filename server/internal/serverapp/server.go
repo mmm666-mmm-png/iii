@@ -92,6 +92,7 @@ type ServerState struct {
 	LatestVideoBytes int                 `json:"latestVideoBytes,omitempty"`
 	Quality          streamQualityStats  `json:"quality"`
 	Vision           *visionStateMessage `json:"vision,omitempty"`
+	AI               *aiStateMessage     `json:"ai,omitempty"`
 }
 
 type viewerClient struct {
@@ -305,20 +306,21 @@ func (h *streamHub) broadcastState() {
 type server struct {
 	// server 聚合所有子系统：设备/浏览器 hub、DashScope 实时桥、Python 视觉 worker、
 	// 本地工具技能、质量统计和设备端语音回放。
-	hub                *streamHub
-	deviceToken        string
-	allowOrigin        string
-	ai                 *dashScopeBridge
-	vision             *visionWorker
-	skills             *skillRegistry
-	stats              *streamStatsTracker
-	navigationVoice    *navigationVoiceLibrary
-	upgrader           websocket.Upgrader
-	devicePlaybackMu   sync.RWMutex
-	devicePlaybackConn net.PacketConn
-	devicePlaybackAddr *net.UDPAddr
-	devicePlaybackSeq  uint32
-	devicePlaybackCh   chan devicePlaybackChunk
+	hub                   *streamHub
+	deviceToken           string
+	allowOrigin           string
+	ai                    *dashScopeBridge
+	vision                *visionWorker
+	skills                *skillRegistry
+	stats                 *streamStatsTracker
+	navigationVoice       *navigationVoiceLibrary
+	upgrader              websocket.Upgrader
+	devicePlaybackMu      sync.RWMutex
+	devicePlaybackConn    net.PacketConn
+	devicePlaybackAddr    *net.UDPAddr
+	devicePlaybackSeq     uint32
+	devicePlaybackCh      chan devicePlaybackChunk
+	devicePlaybackQueueMu sync.Mutex
 	// publishMu 保证发给浏览器的顺序始终是“JSON 元数据在前，二进制载荷在后”，
 	// 前端就是靠这个顺序把视频帧和音频块配对起来的。
 	publishMu sync.Mutex
@@ -477,6 +479,10 @@ func (s *server) currentState() ServerState {
 		visionState := s.vision.snapshot()
 		state.Vision = &visionState
 	}
+	if s.ai != nil {
+		aiState := s.ai.snapshot()
+		state.AI = &aiState
+	}
 	return state
 }
 
@@ -574,7 +580,7 @@ func (s *server) handleSkills(c *gin.Context) {
 }
 
 func (s *server) handleAIMode(c *gin.Context) {
-	// 前端“导盲模式/问答模式”切换。导盲模式下暂停 AI 输入，避免环境语音触发闲聊。
+	// navigation 表示导盲模式：保留 ASR，仅屏蔽普通 AI 回答，允许识别模式切换命令。
 	var payload aiModeRequest
 	if err := c.ShouldBindJSON(&payload); err != nil && err != io.EOF {
 		c.String(http.StatusBadRequest, err.Error())
@@ -591,6 +597,7 @@ func (s *server) handleAIMode(c *gin.Context) {
 	}
 
 	paused := mode == "navigation"
+	s.setVoiceMode(mode)
 	s.setAIInputPaused(paused)
 	if s.ai == nil {
 		c.JSON(http.StatusOK, map[string]any{
@@ -623,7 +630,7 @@ func (s *server) handleVisionStatus(c *gin.Context) {
 }
 
 func (s *server) handleVisionControl(c *gin.Context) {
-	// 转发前端视觉控制到 Python worker，并同步调整 AI 输入暂停状态。
+	// 转发前端视觉控制到 Python worker；AI 是否暂停由语音工作模式统一决定。
 	if s.vision == nil {
 		c.String(http.StatusServiceUnavailable, "vision worker is not configured")
 		return
@@ -634,18 +641,11 @@ func (s *server) handleVisionControl(c *gin.Context) {
 		return
 	}
 	command := strings.TrimSpace(payload.Command)
-	pausesAI := isNavigationVisionCommand(command)
 	resumesAI := isStopVisionCommand(command)
-	if pausesAI {
-		s.setAIInputPaused(true)
-	}
 	ctx, cancel := context.WithTimeout(c.Request.Context(), visionRequestTimeout)
 	defer cancel()
 	response, err := s.vision.control(ctx, command, payload.Target)
 	if err != nil {
-		if pausesAI {
-			s.setAIInputPaused(false)
-		}
 		c.JSON(http.StatusBadGateway, map[string]any{
 			"ok":    false,
 			"error": err.Error(),
