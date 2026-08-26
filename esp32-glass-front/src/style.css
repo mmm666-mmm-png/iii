@@ -1918,6 +1918,63 @@ body {
   background: #fafbfc;
 }
 
+.obstacle-map-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 14px;
+  color: #334155;
+  font-size: 12px;
+}
+
+.obstacle-map-head span,
+.map-status {
+  color: #64748b;
+  font-size: 11px;
+}
+
+.obstacle-map {
+  width: 100%;
+  height: 260px;
+  margin-top: 8px;
+  overflow: hidden;
+  border: 1px solid #dbe4ee;
+  border-radius: 8px;
+  background: #e2e8f0;
+}
+
+.map-status {
+  padding: 8px 0 0;
+}
+
+.obstacle-hotspot-list {
+  display: grid;
+  gap: 6px;
+  max-height: 150px;
+  margin-top: 8px;
+  overflow-y: auto;
+}
+
+.obstacle-hotspot-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px 8px;
+  padding: 7px 9px;
+  border-left: 3px solid #f97316;
+  background: #fff7ed;
+  color: #475569;
+  font-size: 11px;
+}
+
+.obstacle-hotspot-item strong {
+  color: #9a3412;
+}
+
+.obstacle-hotspot-item small {
+  grid-column: 1 / -1;
+  color: #64748b;
+}
+
 .mode-switch-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

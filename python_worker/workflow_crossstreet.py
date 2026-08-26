@@ -209,7 +209,7 @@ class CrossStreetNavigator:
     分割失败时会短暂使用光流追踪保活，减少偶发漏检导致的画面跳变。
     """
 
-    def __init__(self, seg_model=None, coco_model=None, obs_model=None, device_id: str = "esp32"):
+    def __init__(self, seg_model=None, coco_model=None, obs_model=None, device_id: str = "esp32", obstacle_reporter=None):
         self.seg_model = seg_model
         self.device_id = device_id
         self.frame_counter = 0
@@ -238,6 +238,7 @@ class CrossStreetNavigator:
 
         # —— 避障（与 blindpath 一致） ——
         self.obstacle_detector = obs_model
+        self.obstacle_reporter = obstacle_reporter
         self.prev_gray = None
         self.last_detected_obstacles = []
         self.last_obstacle_detection_frame = 0
@@ -1373,6 +1374,9 @@ class CrossStreetNavigator:
                         )
                     self.last_detected_obstacles = detected_obstacles
                     self.last_obstacle_detection_frame = self.frame_counter
+                    if self.obstacle_reporter:
+                        for obstacle in detected_obstacles:
+                            self.obstacle_reporter(obstacle)
                 else:
                     if self.frame_counter - self.last_obstacle_detection_frame < self.OBSTACLE_CACHE_DURATION_FRAMES:
                         detected_obstacles = self.last_detected_obstacles

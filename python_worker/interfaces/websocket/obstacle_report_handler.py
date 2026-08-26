@@ -105,11 +105,16 @@ class ObstacleReportWebSocketHandler:
     def _process_report(self, data: dict, device_id: str) -> dict:
         """处理单条障碍物上报。"""
         try:
-            lng = float(data.get("lng", 0))
-            lat = float(data.get("lat", 0))
+            raw_lng = data.get("lng")
+            raw_lat = data.get("lat")
+            location = (
+                GeoPoint(float(raw_lng), float(raw_lat))
+                if raw_lng is not None and raw_lat is not None
+                else None
+            )
             obstacle = Obstacle(
                 device_id=device_id,
-                location=GeoPoint(lng, lat),
+                location=location,
                 obstacle_type=data.get("obstacle_type", "unknown"),
                 severity=data.get("severity", "medium"),
                 confidence=float(data.get("confidence", 0.8)),

@@ -38,7 +38,7 @@ class ObstacleAggregator:
         self.config = config or AggregationConfig()
         self._hotspots: Dict[str, ObstacleHotspot] = {}
 
-    def add_report(self, obstacle: Obstacle) -> ObstacleHotspot:
+    def add_report(self, obstacle: Obstacle) -> Optional[ObstacleHotspot]:
         """
         处理一条障碍物上报，返回更新后的热点。
 
@@ -46,7 +46,13 @@ class ObstacleAggregator:
         1. 查找空间范围内同类型的已有热点
         2. 找到则合并（更新位置、计数、置信度、时间）
         3. 没找到则创建新热点
+
+        眼镜端无 GPS（location 为 None）时不上报热点，仅由仓储层保存原始记录。
         """
+        # 无定位上报不参与空间聚类。
+        if obstacle.location is None:
+            return None
+
         # 先清理过期热点
         self._purge_expired(obstacle.timestamp)
 

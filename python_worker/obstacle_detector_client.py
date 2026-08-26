@@ -180,6 +180,7 @@ class ObstacleDetectorClient:
 
             final_obstacles.append({
                 'name': class_name.strip(),
+                'confidence': float(results[0].boxes.conf[i]),
                 'mask': mask,
                 'area': area,
                 'area_ratio': area / (H * W),

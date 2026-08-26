@@ -96,7 +96,7 @@ class BlindPathNavigator:
     并在每帧中同时检测盲道、斑马线和障碍物。
     """
     
-    def __init__(self, yolo_model=None, obstacle_detector=None):
+    def __init__(self, yolo_model=None, obstacle_detector=None, obstacle_reporter=None):
         """
         初始化导航器
         :param yolo_model: YOLO分割模型（可选）
@@ -104,6 +104,7 @@ class BlindPathNavigator:
         """
         self.yolo_model = yolo_model
         self.obstacle_detector = obstacle_detector
+        self.obstacle_reporter = obstacle_reporter
         
         # 状态变量
         self.current_state = STATE_ONBOARDING
@@ -464,6 +465,9 @@ class BlindPathNavigator:
             detected_obstacles = self._detect_obstacles(image, blind_path_mask)
             self.last_detected_obstacles = detected_obstacles
             self.last_obstacle_detection_frame = self.frame_counter
+            if self.obstacle_reporter:
+                for obstacle in detected_obstacles:
+                    self.obstacle_reporter(obstacle)
             logger.info(f"[Frame {self.frame_counter}] 执行了新的障碍物检测，检测到 {len(detected_obstacles)} 个障碍物")
         else:
             if self.frame_counter - self.last_obstacle_detection_frame < self.OBSTACLE_CACHE_DURATION_FRAMES:

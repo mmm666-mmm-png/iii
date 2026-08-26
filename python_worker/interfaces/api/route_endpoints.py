@@ -80,8 +80,8 @@ class VoiceCommandBody(BaseModel):
 
 class ObstacleReportBody(BaseModel):
     device_id: str = ""
-    lng: float = Field(..., description="障碍物经度")
-    lat: float = Field(..., description="障碍物纬度")
+    lng: Optional[float] = Field(default=None, description="障碍物经度（眼镜无 GPS 时可缺省）")
+    lat: Optional[float] = Field(default=None, description="障碍物纬度（眼镜无 GPS 时可缺省）")
     obstacle_type: str = Field(default="unknown", description="障碍物类型")
     severity: str = Field(default="medium", description="严重程度: low/medium/high")
     confidence: float = Field(default=0.8, ge=0, le=1)
@@ -287,9 +287,14 @@ def broadcast_route(body: PlanRouteBody):
 async def report_obstacle(body: ObstacleReportBody):
     """Report a detected obstacle to the shared repository."""
     try:
+        location = (
+            GeoPoint(body.lng, body.lat)
+            if body.lng is not None and body.lat is not None
+            else None
+        )
         obstacle = Obstacle(
             device_id=body.device_id,
-            location=GeoPoint(body.lng, body.lat),
+            location=location,
             obstacle_type=body.obstacle_type,
             severity=body.severity,
             confidence=body.confidence,

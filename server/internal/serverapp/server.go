@@ -494,6 +494,8 @@ func (s *server) newRouter() *gin.Engine {
 	router.POST("/api/navigation/voice", s.handleNavigationVoice)
 	router.POST("/api/navigation/broadcast", s.handleNavigationBroadcast)
 	router.GET("/api/navigation/status", s.handleNavigationStatus)
+	router.POST("/api/obstacle/report", s.handleObstacleReport)
+	router.GET("/api/obstacle/hotspots", s.handleObstacleHotspots)
 	router.GET("/api/vision/status", s.handleVisionStatus)
 	router.POST("/api/vision/control", s.handleVisionControl)
 	router.POST("/api/voice/interrupt", s.handleVoiceInterrupt)

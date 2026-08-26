@@ -51,6 +51,14 @@ func (s *server) handleNavigationStatus(c *gin.Context) {
 	s.proxyWorkerJSON(c, http.MethodGet, "/api/navigation/status")
 }
 
+func (s *server) handleObstacleReport(c *gin.Context) {
+	s.proxyWorkerJSON(c, http.MethodPost, "/api/obstacle/report")
+}
+
+func (s *server) handleObstacleHotspots(c *gin.Context) {
+	s.proxyWorkerJSON(c, http.MethodGet, "/api/obstacle/hotspots")
+}
+
 // playNavigationVoiceFromResponse 把 Python worker 返回的导航播报文本下发给
 // 设备扬声器。优先使用中文 broadcast_text；/broadcast 接口额外逐段播报转弯指令。
 func (s *server) playNavigationVoiceFromResponse(body []byte) {
@@ -108,7 +116,13 @@ func (s *server) proxyWorkerJSON(c *gin.Context, method, path string) []byte {
 	ctx, cancel := context.WithTimeout(c.Request.Context(), navigationRequestTimeout)
 	defer cancel()
 
-	req, err := http.NewRequestWithContext(ctx, method, s.vision.endpoint(path), bytes.NewReader(body))
+	// 转发查询参数（如 /api/obstacle/hotspots?lng=..&lat=..&radius=..）。
+	targetPath := path
+	if rawQuery := c.Request.URL.RawQuery; rawQuery != "" {
+		targetPath = path + "?" + rawQuery
+	}
+
+	req, err := http.NewRequestWithContext(ctx, method, s.vision.endpoint(targetPath), bytes.NewReader(body))
 	if err != nil {
 		c.String(http.StatusInternalServerError, err.Error())
 		return nil

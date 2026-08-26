@@ -199,6 +199,40 @@ blind_path_navigator = None
 navigation_active = False
 yolo_seg_model = None
 obstacle_detector = None
+_auto_obstacle_report_lock = threading.Lock()
+_auto_obstacle_report_times: Dict[Tuple[str, int, int], float] = {}
+AUTO_OBSTACLE_REPORT_COOLDOWN = float(os.getenv("AIGLASS_OBS_REPORT_COOLDOWN", "15"))
+
+
+def report_detected_obstacle(obstacle: Dict[str, Any]) -> None:
+    """保存视觉检测结果；无 GPS 时只保留上报记录，不伪造坐标。"""
+    name = str(obstacle.get("name") or "unknown").strip().lower()
+    center_x = float(obstacle.get("center_x", 0))
+    center_y = float(obstacle.get("center_y", 0))
+    key = (name, round(center_x / 80), round(center_y / 80))
+    now = time.monotonic()
+    with _auto_obstacle_report_lock:
+        previous = _auto_obstacle_report_times.get(key, 0.0)
+        if now - previous < AUTO_OBSTACLE_REPORT_COOLDOWN:
+            return
+        _auto_obstacle_report_times[key] = now
+
+    try:
+        from domain.model.obstacle import Obstacle
+        from interfaces.api.route_endpoints import get_obstacle_repo
+
+        confidence = float(obstacle.get("confidence", 0.8))
+        get_obstacle_repo().add(Obstacle(
+            device_id="esp32-glasses",
+            location=None,
+            obstacle_type=name,
+            severity="medium",
+            confidence=max(0.0, min(1.0, confidence)),
+            description="视觉自动检测（无 GPS）",
+        ))
+        print(f"[OBSTACLE_REPORT] 自动上报: {name}（无 GPS）")
+    except Exception as exc:
+        print(f"[OBSTACLE_REPORT] 自动上报失败: {exc}")
 
 # 【新增】过马路导航相关全局变量
 cross_street_navigator = None
@@ -536,7 +570,9 @@ def ensure_vision_stack() -> Tuple[bool, str]:
         return False, "盲道模型未加载，无法进行导航推理"
 
     if blind_path_navigator is None:
-        blind_path_navigator = BlindPathNavigator(yolo_seg_model, obstacle_detector)
+        blind_path_navigator = BlindPathNavigator(
+            yolo_seg_model, obstacle_detector, report_detected_obstacle
+        )
         print("[VISION_API] 盲道导航器已初始化")
 
     if cross_street_navigator is None:
@@ -544,6 +580,7 @@ def ensure_vision_stack() -> Tuple[bool, str]:
             seg_model=yolo_seg_model,
             coco_model=None,
             obs_model=None,
+            obstacle_reporter=report_detected_obstacle,
         )
         print("[VISION_API] 过马路导航器已初始化")
 
@@ -1284,7 +1321,9 @@ async def ws_camera_esp(ws: WebSocket):
     
     # 【新增】初始化盲道导航器
     if blind_path_navigator is None and yolo_seg_model is not None:
-        blind_path_navigator = BlindPathNavigator(yolo_seg_model, obstacle_detector)
+        blind_path_navigator = BlindPathNavigator(
+            yolo_seg_model, obstacle_detector, report_detected_obstacle
+        )
         print("[NAVIGATION] 盲道导航器已初始化")
     else:
         if blind_path_navigator is not None:
@@ -1298,7 +1337,8 @@ async def ws_camera_esp(ws: WebSocket):
             cross_street_navigator = CrossStreetNavigator(
                 seg_model=yolo_seg_model,
                 coco_model=None,  # 不使用交通灯检测
-                obs_model=None    # 暂时也不用障碍物检测，让它更快
+                obs_model=None,    # 暂时也不用障碍物检测，让它更快
+                obstacle_reporter=report_detected_obstacle,
             )
             print("[CROSS_STREET] 过马路导航器已初始化（简化版 - 仅斑马线检测）")
         else:

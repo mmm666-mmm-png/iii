@@ -72,7 +72,8 @@ class Obstacle:
     """
     obstacle_id: str = field(default_factory=lambda: str(uuid.uuid4()))
     device_id: str = ""
-    location: GeoPoint = field(default_factory=lambda: GeoPoint(0, 0))
+    # 眼镜端无 GPS 时 location 为 None：上报仍会留存并可计数，但不参与空间聚类。
+    location: Optional[GeoPoint] = None
     obstacle_type: str = ObstacleType.UNKNOWN
     severity: str = Severity.MEDIUM
     timestamp: datetime = field(default_factory=datetime.utcnow)
@@ -80,10 +81,15 @@ class Obstacle:
     description: str = ""
 
     def to_dict(self) -> dict:
+        location = (
+            {"lng": self.location.lng, "lat": self.location.lat}
+            if self.location is not None
+            else None
+        )
         return {
             "obstacle_id": self.obstacle_id,
             "device_id": self.device_id,
-            "location": {"lng": self.location.lng, "lat": self.location.lat},
+            "location": location,
             "obstacle_type": self.obstacle_type,
             "severity": self.severity,
             "timestamp": self.timestamp.isoformat(),

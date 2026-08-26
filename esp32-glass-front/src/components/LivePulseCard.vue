@@ -217,15 +217,39 @@
 
             <div class="control-section">
               <div class="control-section-head">
-                <strong>障碍物快捷上报</strong>
-                <span>补充位置或类型</span>
+                <strong>障碍物手动上报</strong>
+                <span>{{ gpsFix ? '已定位' : gpsStatus }}</span>
               </div>
               <div class="report-box">
-                <a-input v-model:value="targetText" size="small" placeholder="补充障碍物位置或类型" @press-enter="findObject" />
-                <a-button type="primary" size="small" @click="findObject">
-                  <template #icon><SearchOutlined /></template>
-                  查找上报
+                <a-input v-model:value="obstacleTypeText" size="small" placeholder="障碍物类型，如：电线杆、车辆" @press-enter="reportObstacle" />
+                <a-input v-model:value="obstacleLngText" size="small" placeholder="经度（可手动填写）" />
+                <a-input v-model:value="obstacleLatText" size="small" placeholder="纬度（可手动填写）" />
+                <a-input v-model:value="obstacleDescText" size="small" placeholder="补充描述（可选）" @press-enter="reportObstacle" />
+                <a-button size="small" :disabled="!gpsFix" @click="usePhoneLocation">
+                  <template #icon><EnvironmentOutlined /></template>
+                  使用手机定位
                 </a-button>
+                <a-button type="primary" size="small" :loading="obstacleReportBusy" @click="reportObstacle">
+                  <template #icon><EnvironmentOutlined /></template>
+                  手动上报
+                </a-button>
+              </div>
+              <p v-if="obstacleReportError" class="control-error">{{ obstacleReportError }}</p>
+              <p v-else-if="obstacleReportSuccess" class="control-note">{{ obstacleReportSuccess }}</p>
+              <p class="control-note">可手动填写经纬度，或开启定位后使用手机当前位置；两项都不填也可上报，但不会进入地图热点。</p>
+              <div class="obstacle-map-head">
+                <strong>障碍物热点地图</strong>
+                <span>{{ obstacleHotspots.length }} 个有位置热点</span>
+              </div>
+              <div ref="obstacleMapRef" class="obstacle-map" aria-label="障碍物热点地图"></div>
+              <div v-if="obstacleHotspotsBusy" class="map-status">正在刷新热点...</div>
+              <div v-else-if="obstacleHotspots.length === 0" class="map-status">暂无带坐标的障碍物热点</div>
+              <div v-else class="obstacle-hotspot-list">
+                <div v-for="hotspot in obstacleHotspots" :key="hotspot.hotspot_id" class="obstacle-hotspot-item">
+                  <strong>{{ hotspot.obstacle_type }}</strong>
+                  <span>{{ hotspot.report_count }} 次上报 · {{ hotspot.severity }}</span>
+                  <small>{{ Number(hotspot.location.lng).toFixed(6) }}, {{ Number(hotspot.location.lat).toFixed(6) }}</small>
+                </div>
               </div>
             </div>
 
@@ -431,10 +455,11 @@ import {
   CompassOutlined,
   MessageOutlined,
   PauseCircleOutlined,
-  SearchOutlined,
   SoundOutlined,
   ThunderboltOutlined,
 } from '@ant-design/icons-vue'
+import L from 'leaflet'
+import 'leaflet/dist/leaflet.css'
 
 import { formatDateTime } from '../utils/format'
 
@@ -541,7 +566,19 @@ const lastSeenLabel = computed(() => formatDateTime(props.liveState?.lastDeviceS
 const viewerValue = computed(() => props.liveState?.viewerCount ?? 0)
 const terminalRef = ref(null)
 const transcriptRef = ref(null)
-const targetText = ref('')
+const obstacleTypeText = ref('')
+const obstacleLngText = ref('')
+const obstacleLatText = ref('')
+const obstacleDescText = ref('')
+const obstacleReportBusy = ref(false)
+const obstacleReportError = ref('')
+const obstacleReportSuccess = ref('')
+const obstacleHotspots = ref([])
+const obstacleHotspotsBusy = ref(false)
+const obstacleMapRef = ref(null)
+let obstacleMap = null
+let obstacleMarkerLayer = null
+let obstacleHotspotTimer = null
 const originText = ref('')
 const destinationText = ref('')
 const voiceCommandText = ref('')
@@ -678,12 +715,23 @@ onMounted(() => {
   lastAutoNavigationTranscriptId.value = findLatestFinalUserTranscript(transcriptItems.value)?.id || ''
   refreshNavigationStatus()
   navigationStatusTimer = window.setInterval(refreshNavigationStatus, 5000)
+  refreshObstacleHotspots()
+  obstacleHotspotTimer = window.setInterval(refreshObstacleHotspots, 10000)
+  nextTick(initObstacleMap)
 })
 
 onBeforeUnmount(() => {
   if (navigationStatusTimer) {
     window.clearInterval(navigationStatusTimer)
     navigationStatusTimer = null
+  }
+  if (obstacleHotspotTimer) {
+    window.clearInterval(obstacleHotspotTimer)
+    obstacleHotspotTimer = null
+  }
+  if (obstacleMap) {
+    obstacleMap.remove()
+    obstacleMap = null
   }
 })
 
@@ -707,6 +755,14 @@ const controlTabs = [
   { key: 'obstacle', label: '障碍物管理' },
   { key: 'assist', label: '辅助设置' },
 ]
+
+watch(activeControlTab, async (tab) => {
+  if (tab === 'obstacle') {
+    await nextTick()
+    initObstacleMap()
+    refreshObstacleHotspots()
+  }
+})
 
 const showCameraColumn = computed(() => showPreview.value)
 const showControlColumn = computed(() => ['live', 'navigation'].includes(props.page))
@@ -900,13 +956,122 @@ function changeMode(mode) {
   emit('mode-change', mode)
 }
 
-function findObject() {
-  // 空目标不触发请求，避免 Python worker 进入无意义寻物状态。
-  const target = targetText.value.trim()
-  if (!target) {
+function initObstacleMap() {
+  if (!obstacleMapRef.value || obstacleMap) return
+  obstacleMap = L.map(obstacleMapRef.value, { zoomControl: true }).setView([34.812, 117.327], 15)
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; OpenStreetMap contributors',
+  }).addTo(obstacleMap)
+  obstacleMarkerLayer = L.layerGroup().addTo(obstacleMap)
+  renderObstacleMarkers()
+}
+
+function renderObstacleMarkers() {
+  if (!obstacleMarkerLayer) return
+  obstacleMarkerLayer.clearLayers()
+  const points = obstacleHotspots.value
+    .map((hotspot) => ({
+      hotspot,
+      lat: Number(hotspot.location?.lat),
+      lng: Number(hotspot.location?.lng),
+    }))
+    .filter(({ lat, lng }) => Number.isFinite(lat) && Number.isFinite(lng))
+
+  points.forEach(({ hotspot, lat, lng }) => {
+    const marker = L.circleMarker([lat, lng], {
+      radius: Math.min(14, 7 + Number(hotspot.report_count || 1)),
+      color: hotspot.severity === 'high' ? '#dc2626' : '#f97316',
+      fillColor: hotspot.severity === 'high' ? '#ef4444' : '#fb923c',
+      fillOpacity: 0.8,
+      weight: 2,
+    })
+    const popup = L.DomUtil.create('div')
+    const title = L.DomUtil.create('strong', '', popup)
+    title.textContent = hotspot.obstacle_type || 'unknown'
+    const detail = L.DomUtil.create('div', '', popup)
+    detail.textContent = `${hotspot.report_count || 0} 次上报 · ${hotspot.severity || 'medium'}`
+    marker.bindPopup(popup).addTo(obstacleMarkerLayer)
+  })
+
+  if (points.length && obstacleMap) {
+    const bounds = L.latLngBounds(points.map(({ lat, lng }) => [lat, lng]))
+    obstacleMap.fitBounds(bounds, { padding: [24, 24], maxZoom: 17 })
+  }
+}
+
+async function refreshObstacleHotspots() {
+  obstacleHotspotsBusy.value = true
+  try {
+    const body = await requestJSON('/api/obstacle/hotspots')
+    obstacleHotspots.value = Array.isArray(body?.data?.hotspots) ? body.data.hotspots : []
+    renderObstacleMarkers()
+  } catch {
+    // 地图数据不可用时保留上一次结果，不影响导航和手动上报。
+  } finally {
+    obstacleHotspotsBusy.value = false
+  }
+}
+
+async function reportObstacle() {
+  // 手动上报：优先使用手填坐标，否则回退到手机定位；坐标可全部缺省。
+  obstacleReportError.value = ''
+  obstacleReportSuccess.value = ''
+
+  const obstacleType = obstacleTypeText.value.trim()
+  if (!obstacleType) {
+    obstacleReportError.value = '请先填写障碍物类型。'
     return
   }
-  emitVisionCommand('find_object', target)
+
+  const manualLng = obstacleLngText.value.trim()
+  const manualLat = obstacleLatText.value.trim()
+  if ((manualLng && !manualLat) || (!manualLng && manualLat)) {
+    obstacleReportError.value = '经度和纬度需要同时填写。'
+    return
+  }
+  const fix = props.gpsFix
+  const lng = manualLng ? Number(manualLng) : fix?.lng
+  const lat = manualLat ? Number(manualLat) : fix?.lat
+  if (manualLng && (!Number.isFinite(lng) || !Number.isFinite(lat) || lng < -180 || lng > 180 || lat < -90 || lat > 90)) {
+    obstacleReportError.value = '请输入有效的经纬度。'
+    return
+  }
+
+  const deviceId = props.liveState?.device?.deviceId || ''
+  obstacleReportBusy.value = true
+  try {
+    await requestJSON('/api/obstacle/report', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        device_id: deviceId,
+        ...(lng != null && lat != null ? { lng, lat } : {}),
+        obstacle_type: obstacleType,
+        severity: 'medium',
+        confidence: 0.9,
+        description: obstacleDescText.value.trim(),
+      }),
+    })
+    obstacleReportSuccess.value = '障碍物已上报。'
+    obstacleTypeText.value = ''
+    obstacleLngText.value = ''
+    obstacleLatText.value = ''
+    obstacleDescText.value = ''
+    await refreshObstacleHotspots()
+  } catch (error) {
+    obstacleReportError.value = error instanceof Error ? error.message : '障碍物上报失败。'
+  } finally {
+    obstacleReportBusy.value = false
+  }
+}
+
+function usePhoneLocation() {
+  if (!props.gpsFix) return
+  obstacleLngText.value = Number(props.gpsFix.lng).toFixed(6)
+  obstacleLatText.value = Number(props.gpsFix.lat).toFixed(6)
+  obstacleReportError.value = ''
+  obstacleReportSuccess.value = ''
 }
 
 async function requestJSON(path, options = {}) {
