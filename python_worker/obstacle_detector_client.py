@@ -20,6 +20,15 @@ logger = logging.getLogger(__name__)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_MODEL_PATH = os.path.join(BASE_DIR, "..", "AIGlasses_for_navigation", "yoloe-11l-seg.pt")
 
+
+def is_lfs_pointer(path: str) -> bool:
+    """检测文件是否为 Git LFS 指针（真实权重未下载时的占位文本）。"""
+    try:
+        with open(path, "rb") as f:
+            return f.read(128).startswith(b"version https://git-lfs.github.com/spec/v1")
+    except OSError:
+        return False
+
 # --- GPU/CPU & AMP 配置：所有视觉模型尽量共享同一设备策略 ---
 DEVICE = os.getenv("AIGLASS_DEVICE", "cuda:0")
 if DEVICE.startswith("cuda") and not torch.cuda.is_available():
@@ -71,6 +80,11 @@ class ObstacleDetectorClient:
         try:
             if not os.path.exists(model_path):
                 raise FileNotFoundError(f"YOLOE model not found: {model_path}")
+            if is_lfs_pointer(model_path):
+                raise RuntimeError(
+                    f"模型文件是 Git LFS 指针（真实权重未下载）: {model_path}。"
+                    "请从完整备份/发布包恢复真实文件后再启动。"
+                )
             logger.info("正在加载 YOLOE 障碍物模型...")
             self.model = YOLOE(model_path)
             self.model.to(DEVICE)

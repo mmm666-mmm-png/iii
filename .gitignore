@@ -1,0 +1,11 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Local toolchains / environment (do not commit)
+.tools/
+.vscode/
+
+# Node dependencies (already committed in this repo; keep future installs out)
+node_modules/

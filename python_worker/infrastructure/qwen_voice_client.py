@@ -22,19 +22,6 @@ from .config import QwenConfig
 logger = logging.getLogger(__name__)
 
 
-# 道路类型 → 中文播报名称（用于路线状况描述）
-_ROAD_TYPE_LABELS = {
-    "blind_path": "盲道",
-    "sidewalk": "人行道",
-    "pedestrian": "步行街",
-    "crosswalk": "斑马线",
-    "underpass": "地下通道",
-    "footbridge": "人行天桥",
-    "service": "服务道路",
-    "unknown": "普通道路",
-}
-
-
 class QwenVoiceClient:
     """通义千问语音交互客户端。"""
 
@@ -122,16 +109,12 @@ class QwenVoiceClient:
             return self._fallback_broadcast(best_route, all_routes)
 
         try:
-            condition = self._route_condition_summary(best_route)
             route_info = {
+                "最优路线": best_route.score_breakdown_dict(),
                 "总距离": f"{best_route.total_distance_meters:.0f}米",
                 "预计时间": f"{best_route.total_duration_seconds // 60}分钟",
-                "路线状况": {
-                    "道路类型构成": condition["road_type_distribution"],
-                    "转弯次数": condition["turn_count"],
-                    "红绿灯数": condition["traffic_light_count"],
-                },
                 "盲道覆盖率": f"{best_route.blind_path_coverage * 100:.1f}%",
+                "障碍物密度": f"{best_route.obstacle_density:.1f}个/公里",
                 "备选路线数": len(all_routes),
             }
 
@@ -140,11 +123,12 @@ class QwenVoiceClient:
 
 要求:
 1. 开头说明已为您规划好路线
-2. 重点播报路线状况：沿途道路类型构成（盲道、人行道、斑马线、天桥等分别有多长）、转弯次数和红绿灯情况
-3. 重点播报盲道覆盖情况：覆盖率高不高、是否适合盲杖行走
-4. 结尾给出出发建议
-5. 总字数控制在150字以内，适合语音播报
-6. 不要使用markdown格式，直接输出纯文本"""
+2. 说明总距离和预计时间
+3. 重点说明盲道友好度（覆盖率高不高）
+4. 提醒沿途障碍物情况
+5. 结尾给出出发建议
+6. 总字数控制在150字以内，适合语音播报
+7. 不要使用markdown格式，直接输出纯文本"""
 
             resp = client.chat.completions.create(
                 model=self.config.model,
@@ -156,26 +140,6 @@ class QwenVoiceClient:
         except Exception as e:
             logger.error(f"大模型播报生成失败: {e}")
             return self._fallback_broadcast(best_route, all_routes)
-
-    @staticmethod
-    def _route_condition_summary(route: Route) -> Dict:
-        """统计路线各道路类型的里程构成，生成路线状况摘要。"""
-        distribution: Dict[str, float] = {}
-        for seg in route.segments:
-            label = _ROAD_TYPE_LABELS.get(seg.road_type, "普通道路")
-            distribution[label] = distribution.get(label, 0.0) + seg.compute_distance()
-
-        sorted_items = sorted(
-            distribution.items(), key=lambda kv: kv[1], reverse=True
-        )
-        road_parts = [
-            f"{label}约{dist:.0f}米" for label, dist in sorted_items if dist > 0
-        ]
-        return {
-            "road_type_distribution": road_parts,
-            "turn_count": route.turn_count,
-            "traffic_light_count": route.traffic_light_count,
-        }
 
     def generate_route_broadcast_en(
         self,
@@ -305,31 +269,27 @@ Requirements:
         return result
 
     def _fallback_broadcast(self, best_route: Route, all_routes: List[Route]) -> str:
-        """无大模型时的模板播报（重点：路线状况 + 盲道覆盖情况）。"""
+        """无大模型时的模板播报。"""
         dist = best_route.total_distance_meters
         minutes = best_route.total_duration_seconds // 60
         blind_pct = best_route.blind_path_coverage * 100
-
-        condition = self._route_condition_summary(best_route)
-        road_parts = condition["road_type_distribution"]
+        obs_density = best_route.obstacle_density
 
         parts = [f"已为您规划好最优路线，全程约{dist:.0f}米，预计{minutes}分钟。"]
 
-        # 路线状况
-        if road_parts:
-            parts.append("沿途路况：" + "，".join(road_parts[:4]) + "。")
-        if condition["turn_count"]:
-            parts.append(f"全程需转弯{condition['turn_count']}次。")
-        if condition["traffic_light_count"]:
-            parts.append(f"途经{condition['traffic_light_count']}个红绿灯。")
-
-        # 盲道覆盖情况
         if blind_pct >= 60:
-            parts.append(f"这条路线的盲道覆盖率达{blind_pct:.0f}%，盲道连续性好，非常适合盲杖行走。")
+            parts.append(f"这条路线盲道覆盖率达{blind_pct:.0f}%，非常适合盲杖行走。")
         elif blind_pct >= 30:
-            parts.append(f"路线约有{blind_pct:.0f}%的路段铺有盲道，部分路段需借助人行道。")
+            parts.append(f"路线约有{blind_pct:.0f}%的路段有盲道，请注意部分路段需借助人行道。")
         else:
-            parts.append("该路线盲道覆盖较少，建议借助盲杖和路人协助。")
+            parts.append("该路线盲道较少，建议借助盲杖和路人协助。")
+
+        if obs_density > 5:
+            parts.append(f"沿途障碍物较多，约每公里{obs_density:.0f}处，请格外小心。")
+        elif obs_density > 2:
+            parts.append(f"沿途有少量障碍物，请注意避让。")
+        else:
+            parts.append("沿途路况良好，障碍物较少。")
 
         parts.append("祝您出行顺利，出发吧。")
         return "".join(parts)

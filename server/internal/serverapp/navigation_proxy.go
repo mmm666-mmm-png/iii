@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -145,66 +144,4 @@ func (s *server) proxyWorkerJSON(c *gin.Context, method, path string) []byte {
 	c.Status(resp.StatusCode)
 	_, _ = c.Writer.Write(respBody)
 	return respBody
-}
-
-// callNavigationVoice 供本地技能直接调用 Python worker 的高德导航语音接口：
-// 不经过 gin 请求上下文，规划成功后把路线播报下发到设备扬声器，
-// 并返回结构化 data 与可读摘要，供技能回复使用。
-func (s *server) callNavigationVoice(ctx context.Context, text string) (map[string]any, string, error) {
-	if s.vision == nil {
-		return nil, "", fmt.Errorf("vision worker is not configured")
-	}
-
-	body, err := json.Marshal(map[string]string{"text": text})
-	if err != nil {
-		return nil, "", err
-	}
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.vision.endpoint("/api/navigation/voice"), bytes.NewReader(body))
-	if err != nil {
-		return nil, "", err
-	}
-	req.Header.Set("Content-Type", "application/json")
-
-	client := &http.Client{Timeout: navigationRequestTimeout}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, "", err
-	}
-	defer resp.Body.Close()
-
-	respBody, err := io.ReadAll(io.LimitReader(resp.Body, 12<<20))
-	if err != nil {
-		return nil, "", err
-	}
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, "", fmt.Errorf("HTTP %d: %s", resp.StatusCode, strings.TrimSpace(string(respBody)))
-	}
-
-	// 复用现有解析逻辑：提取播报文本并顺序下发到设备扬声器。
-	s.playNavigationVoiceFromResponse(respBody)
-
-	var payload struct {
-		Data navigationWorkerResultData `json:"data"`
-	}
-	if err := json.Unmarshal(respBody, &payload); err != nil {
-		return nil, "", err
-	}
-
-	summary := ""
-	if payload.Data.PlanningResult != nil {
-		summary = payload.Data.PlanningResult.BroadcastText
-	}
-	if strings.TrimSpace(summary) == "" {
-		summary = payload.Data.ResponseText
-	}
-	if strings.TrimSpace(summary) == "" {
-		summary = "路线已规划完成。"
-	}
-
-	result := map[string]any{
-		"response_text":   payload.Data.ResponseText,
-		"planning_result": payload.Data.PlanningResult,
-	}
-	return result, summary, nil
 }

@@ -7,20 +7,26 @@ Set-Location $workerPath
 
 Write-Host "Already entry: $workerPath" -ForegroundColor Green
 
-# 2. 定位 Python 解释器（conda esp32 环境）。
+# 2. 定位 Python 解释器（使用 VS Code 创建的 .venv_nav 环境）。
 # 注意：在 .ps1 脚本里 `conda activate` 经常因 conda 未初始化而失效，
 # 导致误用 base 环境的 python（缺少 cv2/torch 等依赖），因此这里直接用绝对路径更可靠。
+$NavPython = "D:\qq download\429500506\FileRecv\esp32-glass-all-zhu\esp32-glass-all-zhu\.venv_nav\Scripts\python.exe"
 $CondaPython = "D:\conda\envs\esp32\python.exe"
-if (-not (Test-Path $CondaPython)) {
+if (Test-Path $NavPython) {
+    $Python = $NavPython
+} elseif (-not (Test-Path $CondaPython)) {
     # 兜底：用 conda run 解析 esp32 环境，仍失败则退回系统 python
     try {
         $CondaPython = (conda run -n esp32 where python 2>$null | Select-Object -Last 1).Trim()
     } catch {
         $CondaPython = "python"
     }
+    $Python = $CondaPython
+} else {
+    $Python = $CondaPython
 }
 
-Write-Host "Using Python: $CondaPython" -ForegroundColor Green
+Write-Host "Using Python: $Python" -ForegroundColor Green
 
 # 3. 端口占用检测：若 worker 端口已被占用，自动结束旧的 worker 进程，避免重复启动报错
 $WorkerPort = 18082
@@ -42,4 +48,4 @@ if ($existing) {
 }
 
 # 4. 运行 app_main.py
-& $CondaPython app_main.py
+& $Python app_main.py
