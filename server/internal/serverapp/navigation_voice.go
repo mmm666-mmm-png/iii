@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 	"unicode"
 )
 
@@ -332,7 +333,10 @@ func (s *server) enqueueNavigationVoiceSequenceForDevice(texts []string) {
 	}
 
 	s.clearDevicePlaybackQueue()
-	for _, chunk := range chunks {
+	for index, chunk := range chunks {
+		if index < len(chunks)-1 {
+			chunk.pauseAfter = 700 * time.Millisecond
+		}
 		select {
 		case s.devicePlaybackCh <- chunk:
 		default:

@@ -126,6 +126,10 @@
                 <template #icon><SoundOutlined /></template>
                 播报路线
               </a-button>
+              <a-button size="small" @click="testSegmentBroadcast">
+                <template #icon><SoundOutlined /></template>
+                测试逐段
+              </a-button>
               <a-button v-if="navigationLaunchUri" size="small" @click="openNavigationUri">
                 <template #icon><EnvironmentOutlined /></template>
                 打开高德
@@ -151,6 +155,9 @@
               <span v-if="gpsFix" class="gps-row-fix">
                 {{ Number(gpsFix.lng).toFixed(6) }}, {{ Number(gpsFix.lat).toFixed(6) }}
                 <small v-if="gpsFix.accuracy">±{{ Math.round(gpsFix.accuracy) }}m</small>
+              </span>
+              <span v-if="gpsNavigationStatus?.triggered?.length" class="gps-row-fix">
+                已触发 {{ gpsNavigationStatus.triggered.length }} 段播报
               </span>
             </div>
 
@@ -546,6 +553,10 @@ const props = defineProps({
     default: '未开启',
   },
   gpsFix: {
+    type: Object,
+    default: null,
+  },
+  gpsNavigationStatus: {
     type: Object,
     default: null,
   },
@@ -1151,7 +1162,7 @@ async function planNavigationRoute() {
     navigationVoiceResult.value = data
     syncNavigationFields(data)
     appendNavigationTranscript(data)
-    speakNavigationBroadcast(data)
+    speakNavigationSummary(data)
     await refreshNavigationStatus()
   } catch (error) {
     navigationError.value = error instanceof Error ? error.message : '路线规划失败'
@@ -1187,7 +1198,7 @@ async function submitNavigationVoice() {
     }
     syncNavigationFields(data)
     appendNavigationTranscript(data)
-    speakNavigationBroadcast(data)
+    speakNavigationSummary(data)
     await refreshNavigationStatus()
   } catch (error) {
     navigationError.value = error instanceof Error ? error.message : '语音解析失败'
@@ -1302,10 +1313,14 @@ function appendNavigationTranscript(data = {}) {
   })
 }
 
-function speakNavigationBroadcast(data = {}) {
-  const text = data.planning_result?.broadcast_text || data.response_text || ''
-  const speechKey = `${data.planning_result?.request_id || ''}-${text}`
-  if (!text || speechKey === lastNavigationSpeechKey.value) {
+function speakNavigationSteps(data = {}) {
+  const steps = data.planning_result?.turn_by_turn || data.turn_by_turn || []
+  const normalizedSteps = Array.isArray(steps)
+    ? steps.filter((step) => String(step?.instruction || '').trim())
+    : []
+  const summary = data.planning_result?.broadcast_text || data.response_text || ''
+  const speechKey = `${data.planning_result?.request_id || ''}-${summary}-${normalizedSteps.map((step) => step.instruction).join('|')}`
+  if (!summary && normalizedSteps.length === 0 || speechKey === lastNavigationSpeechKey.value) {
     return
   }
 
@@ -1316,19 +1331,50 @@ function speakNavigationBroadcast(data = {}) {
 
   try {
     window.speechSynthesis.cancel()
-    const utterance = new SpeechSynthesisUtterance(text)
-    utterance.lang = 'zh-CN'
-    utterance.rate = 0.96
-    utterance.pitch = 1
     const voices = window.speechSynthesis.getVoices?.() || []
     const chineseVoice = voices.find((voice) => String(voice.lang || '').toLowerCase().startsWith('zh'))
-    if (chineseVoice) {
-      utterance.voice = chineseVoice
-    }
-    window.speechSynthesis.speak(utterance)
+    const texts = normalizedSteps.length
+      ? normalizedSteps.map((step, index) => `第${step.index || index + 1}步，${step.instruction}`)
+      : [summary]
+    texts.forEach((text) => {
+      const utterance = new SpeechSynthesisUtterance(text)
+      utterance.lang = 'zh-CN'
+      utterance.rate = 0.96
+      utterance.pitch = 1
+      if (chineseVoice) utterance.voice = chineseVoice
+      window.speechSynthesis.speak(utterance)
+    })
   } catch {
     // ignore browser TTS failures
   }
+}
+
+function speakNavigationSummary(data = {}) {
+  const text = data.planning_result?.broadcast_text || data.response_text || ''
+  if (!text || !window.speechSynthesis || typeof window.SpeechSynthesisUtterance === 'undefined') return
+  window.speechSynthesis.cancel()
+  const utterance = new SpeechSynthesisUtterance(text)
+  utterance.lang = 'zh-CN'
+  utterance.rate = 0.96
+  window.speechSynthesis.speak(utterance)
+}
+
+function testSegmentBroadcast() {
+  const fakeSteps = [
+    { index: 1, instruction: '从校门出发，沿学院路向东直行', distance_meters: 180 },
+    { index: 2, instruction: '前方路口右转进入明德路', distance_meters: 95 },
+    { index: 3, instruction: '沿明德路直行，经过一处斑马线', distance_meters: 240 },
+    { index: 4, instruction: '前方五十米左转，终点就在右侧', distance_meters: 50 },
+  ]
+  const data = {
+    response_text: '开始测试逐段导航播报',
+    turn_by_turn: fakeSteps,
+    planning_result: { request_id: `fake-${Date.now()}`, turn_by_turn: fakeSteps },
+  }
+  navigationBroadcastResult.value = data
+  navigationPlan.value = data
+  appendNavigationTranscript(data)
+  speakNavigationSteps(data)
 }
 
 function looksLikeNavigationVoice(text) {

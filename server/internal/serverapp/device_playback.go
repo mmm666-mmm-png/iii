@@ -21,6 +21,7 @@ type devicePlaybackChunk struct {
 	channels      int
 	bitsPerSample int
 	payload       []byte
+	pauseAfter    time.Duration
 }
 
 type devicePlaybackSendResult struct {
@@ -136,6 +137,9 @@ func (s *server) devicePlaybackLoop() {
 	for chunk := range s.devicePlaybackCh {
 		if _, err := s.sendAIAudioToDeviceNow(chunk); err != nil {
 			log.Printf("device playback udp send failed: %v", err)
+		}
+		if chunk.pauseAfter > 0 {
+			time.Sleep(chunk.pauseAfter)
 		}
 	}
 }

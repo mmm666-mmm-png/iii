@@ -151,6 +151,7 @@ const aiAudioChunksSeen = ref(0)
 const gpsEnabled = ref(false)
 const gpsStatus = ref('未开启')
 const gpsFix = ref(null)
+const gpsNavigationStatus = ref(null)
 let gpsWatchId = null
 
 let refreshTimer = null
@@ -544,16 +545,30 @@ function connectLiveSocket() {
   socket.addEventListener('error', () => socket.close())
 }
 
-function sendGpsUpdate(lat, lng, accuracy) {
+async function sendGpsUpdate(lat, lng, accuracy) {
   // 通过 HTTP POST /api/gps/update 上报 GPS（WGS-84），Go 转发给 Python worker 做路段匹配与逐段播报。
   // 注意：不走 WebSocket，因为 Go 的 handleViewerWS 是纯接收端；GPS 走 /api/gps/update HTTP 端点。
-  fetch(apiUrl('/api/gps/update'), {
+  const response = await fetch(apiUrl('/api/gps/update'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ lat, lng, accuracy }),
-  }).catch(() => {})
+  }).catch(() => null)
   gpsFix.value = { lat, lng, accuracy, updatedAt: new Date() }
-  gpsStatus.value = `定位中 (${Number(lng).toFixed(6)}, ${Number(lat).toFixed(6)})`
+  if (!response?.ok) {
+    gpsStatus.value = '定位已获取，导航服务未响应'
+    return
+  }
+  const body = await response.json().catch(() => ({}))
+  gpsNavigationStatus.value = body.data?.data || body.data || null
+  if (gpsNavigationStatus.value?.reason === 'no_route') {
+    gpsStatus.value = '定位已获取，请先规划路线'
+  } else if (gpsNavigationStatus.value?.off_route) {
+    gpsStatus.value = `已定位，但偏离路线约 ${Number(gpsNavigationStatus.value.distance_m || 0).toFixed(0)}m`
+  } else if (gpsNavigationStatus.value?.triggered?.length) {
+    gpsStatus.value = `已播报第 ${gpsNavigationStatus.value.triggered[0].index} 段导航`
+  } else {
+    gpsStatus.value = `导航跟踪中，第 ${Number(gpsNavigationStatus.value?.matched ?? 0) + 1} 段`
+  }
 }
 
 function startGpsTracking() {
@@ -585,6 +600,7 @@ function stopGpsTracking() {
   }
   gpsWatchId = null
   gpsFix.value = null
+  gpsNavigationStatus.value = null
   gpsStatus.value = '未开启'
 }
 

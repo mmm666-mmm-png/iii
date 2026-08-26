@@ -178,10 +178,10 @@ func (v *visionWorker) control(ctx context.Context, command, target string) (vis
 	return response, nil
 }
 
-func (v *visionWorker) gpsUpdate(lat, lng, accuracy float64) {
-	// 手机定位经纬度 fire-and-forget 转发给 Python worker 做路段匹配。
+func (v *visionWorker) gpsUpdate(lat, lng, accuracy float64) (map[string]any, error) {
+	// 手机定位经纬度转发给 Python worker 做路段匹配，并返回匹配结果。
 	if v == nil {
-		return
+		return nil, errors.New("vision worker is not configured")
 	}
 	payload, _ := json.Marshal(gpsUpdateRequest{Lat: lat, Lng: lng, Accuracy: accuracy})
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
@@ -189,16 +189,20 @@ func (v *visionWorker) gpsUpdate(lat, lng, accuracy float64) {
 
 	request, err := http.NewRequestWithContext(ctx, http.MethodPost, v.endpoint("/api/gps/update"), bytes.NewReader(payload))
 	if err != nil {
-		return
+		return nil, err
 	}
 	request.Header.Set("Content-Type", "application/json")
 	response, err := v.client.Do(request)
 	if err != nil {
 		log.Printf("gps update failed: %v", err)
-		return
+		return nil, err
 	}
 	defer response.Body.Close()
-	io.Copy(io.Discard, io.LimitReader(response.Body, 1<<10))
+	var result map[string]any
+	if err := json.NewDecoder(io.LimitReader(response.Body, 1<<20)).Decode(&result); err != nil {
+		return nil, err
+	}
+	return result, nil
 }
 
 func (v *visionWorker) ingestFrame(meta *PacketMeta, payload []byte) {

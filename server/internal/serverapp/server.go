@@ -684,8 +684,12 @@ func (s *server) handleGpsUpdate(c *gin.Context) {
 		c.JSON(http.StatusOK, map[string]any{"ok": false})
 		return
 	}
-	s.vision.gpsUpdate(payload.Lat, payload.Lng, payload.Accuracy)
-	c.JSON(http.StatusOK, map[string]any{"ok": true})
+	result, err := s.vision.gpsUpdate(payload.Lat, payload.Lng, payload.Accuracy)
+	if err != nil {
+		c.JSON(http.StatusOK, map[string]any{"ok": false, "error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, map[string]any{"ok": true, "data": result})
 }
 
 func (s *server) setAIInputPaused(paused bool) {

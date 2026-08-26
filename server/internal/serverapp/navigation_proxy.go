@@ -34,12 +34,12 @@ type navigationTurnStep struct {
 
 func (s *server) handleNavigationPlan(c *gin.Context) {
 	body := s.proxyWorkerJSON(c, http.MethodPost, "/api/navigation/plan")
-	s.playNavigationVoiceFromResponse(body)
+	s.playNavigationSummaryFromResponse(body)
 }
 
 func (s *server) handleNavigationVoice(c *gin.Context) {
 	body := s.proxyWorkerJSON(c, http.MethodPost, "/api/navigation/voice")
-	s.playNavigationVoiceFromResponse(body)
+	s.playNavigationSummaryFromResponse(body)
 }
 
 func (s *server) handleNavigationBroadcast(c *gin.Context) {
@@ -92,6 +92,28 @@ func (s *server) playNavigationVoiceFromResponse(body []byte) {
 		}
 	}
 	s.enqueueNavigationVoiceSequenceForDevice(texts)
+}
+
+func (s *server) playNavigationSummaryFromResponse(body []byte) {
+	if len(body) == 0 {
+		return
+	}
+	var payload struct {
+		Data navigationWorkerResultData `json:"data"`
+	}
+	if err := json.Unmarshal(body, &payload); err != nil {
+		return
+	}
+	text := ""
+	if payload.Data.PlanningResult != nil {
+		text = payload.Data.PlanningResult.BroadcastText
+	}
+	if strings.TrimSpace(text) == "" {
+		text = payload.Data.ResponseText
+	}
+	if strings.TrimSpace(text) != "" {
+		s.enqueueNavigationVoiceForDevice(text)
+	}
 }
 
 func (s *server) proxyWorkerJSON(c *gin.Context, method, path string) []byte {

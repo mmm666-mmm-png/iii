@@ -37,6 +37,7 @@ class GpsNavigationTrigger:
     GPS_MAX_ACCURACY_M = 100.0    # 定位精度超过该值视为低可信（仍尝试匹配，仅告警）
     GPS_JUMP_MAX_M = 300.0        # 相邻两次定位跳变超过该距离视为异常漂移（仅告警）
     GPS_OFFROUTE_WARN_COUNT = 5   # 连续偏离路线达到该次数打印一次警告
+    ANNOUNCE_NEXT_SEGMENT_AT = 0.65  # 当前路段走过约65%时，提前播报下一段
 
     def __init__(self, broadcast_service: Optional[RouteBroadcastService] = None):
         self._broadcast = broadcast_service or RouteBroadcastService()
@@ -195,7 +196,7 @@ class GpsNavigationTrigger:
                 "triggered": [],
             }
 
-        best_index, best_distance, _ = self._match_segment(point, segments)
+        best_index, best_distance, progress = self._match_segment(point, segments)
 
         result: Dict[str, Any] = {
             "matched": best_index,
@@ -203,6 +204,7 @@ class GpsNavigationTrigger:
             "off_route": best_distance is None or best_distance > self.MATCH_MAX_DISTANCE_M,
             "triggered": [],
             "jumped": jumped,
+            "progress": round(progress, 3),
         }
 
         # 5) 偏离路线累计告警
@@ -221,16 +223,22 @@ class GpsNavigationTrigger:
 
         to_announce: List[int] = []
         first_announce = False
+        announce_until = best_index
+        if (
+            best_index < len(segments) - 1
+            and progress >= self.ANNOUNCE_NEXT_SEGMENT_AT
+        ):
+            announce_until = best_index + 1
         with self._lock:
-            if best_index > self._announced_index:
+            if announce_until > self._announced_index:
                 if self._paused:
                     # 暂停期间不推进、不播报，恢复后由下一次定位补齐当前路段。
                     result["paused"] = True
                     return result
                 first_announce = self._announced_index < 0
                 start_index = self._announced_index + 1
-                self._announced_index = best_index
-                to_announce = list(range(start_index, best_index + 1))
+                self._announced_index = announce_until
+                to_announce = list(range(start_index, announce_until + 1))
 
         if to_announce:
             steps = [

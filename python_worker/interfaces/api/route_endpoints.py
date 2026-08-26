@@ -172,11 +172,9 @@ def plan_route(body: PlanRouteBody):
 
         request, request_context = _build_plan_request(body)
         if request is None:
-            _announce_navigation_voice(request_context.get("response_text", ""))
             return {"success": True, "data": request_context}
 
         planning_result = route_service.plan_route(request)
-        _announce_navigation_voice(planning_result.broadcast_text)
         get_gps_trigger().set_route(
             planning_result.segments,
             blind_path_coverage=planning_result.best_route.blind_path_coverage,
@@ -221,14 +219,10 @@ def process_voice_command(body: VoiceCommandBody):
             route_service.obstacle_repo = get_obstacle_repo()
             planning_result = route_service.plan_route(result["navigation_request"])
             result["planning_result"] = planning_result.to_dict()
-            _announce_navigation_voice(planning_result.broadcast_text)
             get_gps_trigger().set_route(
                 planning_result.segments,
                 blind_path_coverage=planning_result.best_route.blind_path_coverage,
             )
-        else:
-            _announce_navigation_voice(result.get("response_text", ""))
-
         result.pop("navigation_request", None)
         return {"success": True, "data": result}
     except Exception as exc:
@@ -249,18 +243,15 @@ def broadcast_route(body: PlanRouteBody):
 
         request, request_context = _build_plan_request(body)
         if request is None:
-            _announce_navigation_voice(request_context.get("response_text", ""))
             return {"success": True, "data": request_context}
 
         planning_result = route_service.plan_route(request)
-        _announce_navigation_voice(planning_result.broadcast_text)
         get_gps_trigger().set_route(
             planning_result.segments,
             blind_path_coverage=planning_result.best_route.blind_path_coverage,
         )
 
         steps = planning_result.turn_by_turn
-        get_broadcast_service().broadcast_steps(steps)
 
         if not request_context["response_text"]:
             request_context["response_text"] = planning_result.broadcast_text
