@@ -363,12 +363,13 @@ func Run(cfg Config) error {
 	}
 	if cfg.DashScopeAPIKey != "" {
 		app.ai = newDashScopeBridge(app, dashScopeConfig{
-			APIKey:       cfg.DashScopeAPIKey,
-			Region:       cfg.DashScopeRegion,
-			Model:        cfg.DashScopeModel,
-			Voice:        cfg.DashScopeVoice,
-			Instructions: cfg.DashScopeInstructions,
-			EnableSearch: cfg.DashScopeEnableSearch,
+			APIKey:                 cfg.DashScopeAPIKey,
+			Region:                 cfg.DashScopeRegion,
+			Model:                  cfg.DashScopeModel,
+			Voice:                  cfg.DashScopeVoice,
+			Instructions:           cfg.DashScopeInstructions,
+			NavigationInstructions: cfg.DashScopeNavigationInstructions,
+			EnableSearch:           cfg.DashScopeEnableSearch,
 		})
 	}
 	if cfg.NavigationVoiceDir != "" {
@@ -597,7 +598,12 @@ func (s *server) handleAIMode(c *gin.Context) {
 	}
 
 	paused := mode == "navigation"
-	s.setVoiceMode(mode)
+	// voiceMode 只有 chat/navigation 两种：qa → chat（千问聊天），navigation → navigation（高德导航）。
+	if mode == "navigation" {
+		s.setVoiceMode("navigation")
+	} else {
+		s.setVoiceMode("chat")
+	}
 	s.setAIInputPaused(paused)
 	if s.ai == nil {
 		c.JSON(http.StatusOK, map[string]any{

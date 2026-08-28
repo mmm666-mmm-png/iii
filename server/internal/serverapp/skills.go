@@ -191,7 +191,8 @@ func (r *skillRegistry) matchIntent(text string) (skillIntent, bool) {
 	}
 
 	// 语音交互模式切换（“聊天”↔“高德导航”）。先于视觉命令，避免“路线导航”等词被路线意图误判。
-	if containsAny(normalized, []string{"聊天", "聊天模式", "语音聊天", "退出导航", "不导航", "回到聊天"}) {
+	// “明眸”是唤醒词：呼唤明眸 → 切到千问聊天模式。兼容 ASR 常见误识别与拼音拼写。
+	if isWakeWordTranscript(normalized) || containsAny(normalized, []string{"聊天", "聊天模式", "语音聊天", "退出导航", "不导航", "回到聊天"}) {
 		return skillIntent{Name: "switch_to_chat", Args: map[string]any{}}, true
 	}
 	if containsAny(normalized, []string{"导航模式", "高德导航", "路线导航", "进入导航", "切换导航"}) {
@@ -379,6 +380,14 @@ func visionControlSkill(server *server, name, displayName, description, command 
 				return result, fmt.Sprintf("%s 启动失败：%s。", displayName, err.Error()), err
 			}
 
+			// 导盲/视觉导航启动 → 语音交互切到高德导航并静默千问；停止 → 恢复问答输入。
+			if isNavigationVisionCommand(command) {
+				server.setVoiceMode("navigation")
+				server.setAIInputPaused(true)
+			} else if isStopVisionCommand(command) {
+				server.setAIInputPaused(false)
+			}
+
 			summary := strings.TrimSpace(response.GuidanceText)
 			if summary == "" {
 				summary = fmt.Sprintf("%s 已切换，当前视觉状态为 %s。", displayName, state.State)
@@ -429,7 +438,11 @@ func switchToChatSkill(server *server) skillDefinition {
 			}
 			server.setVoiceMode("chat")
 			server.setAIInputPaused(false)
-			return map[string]any{"voiceMode": "chat"}, "已切换到语音聊天模式，您可以和我聊天或提问。", nil
+			// 唤醒/切回聊天时同步停止视觉导盲，让前端切到问答模式。
+			if server.vision != nil {
+				_, _ = server.vision.control(ctx, "stop", "")
+			}
+			return map[string]any{"voiceMode": "chat"}, "明眸在，已切换到语音聊天模式，请问有什么可以帮您？", nil
 		},
 	}
 }
@@ -480,6 +493,18 @@ func navigationRouteSkill(server *server) skillDefinition {
 			if text == "" {
 				return nil, "", fmt.Errorf("导航口令不能为空")
 			}
+			// 导航优先：进入导航模式并暂停 AI 问答，同时打断当前千问回答，
+			// 避免路线 TTS 与模型复述抢话。
+			server.setVoiceMode("navigation")
+			server.setAIInputPaused(true)
+
+			// 高德导航同时开启视觉导盲模式（盲道跟随），让前端切到“导盲+高德导航”。
+			if server.vision != nil {
+				if _, verr := server.vision.control(ctx, "start_blind_navigation", ""); verr != nil {
+					fmt.Printf("导航到XX 启动导盲模式失败: %v\n", verr)
+				}
+			}
+
 			// 高德 geocode / 路线规划较耗时，使用独立超时上下文，不受技能 8 秒超时限制。
 			navCtx, cancel := context.WithTimeout(context.Background(), navigationRequestTimeout)
 			defer cancel()
@@ -956,6 +981,26 @@ func inferTimezone(text string) string {
 func containsAny(text string, keywords []string) bool {
 	for _, keyword := range keywords {
 		if strings.Contains(text, keyword) {
+			return true
+		}
+	}
+	return false
+}
+
+// isWakeWordTranscript 判断转写文本是否呼唤唤醒词“明眸”。
+// 兼容 ASR 对“明眸”二字的常见误识别（名眸/明谋/明某/名模…）与拼音拼写。
+func isWakeWordTranscript(text string) bool {
+	compact := strings.NewReplacer(
+		" ", "", "　", "", "，", "", "。", "", "！", "", "？", "",
+		"!", "", "?", "", ",", "", ".", "", "、", "", "~", "", "～", "", "：", "", ":", "",
+	).Replace(strings.ToLower(strings.TrimSpace(text)))
+
+	variants := []string{
+		"明眸", "名眸", "明谋", "明某", "名模", "明磨", "明末", "铭眸", "明牟",
+		"mingmou", "míngmóu",
+	}
+	for _, v := range variants {
+		if strings.Contains(compact, v) {
 			return true
 		}
 	}

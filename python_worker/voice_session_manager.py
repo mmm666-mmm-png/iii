@@ -48,6 +48,7 @@ import asyncio
 import json
 import re
 import time
+from difflib import SequenceMatcher
 from typing import Any, Callable, Coroutine, Dict, List, Optional
 
 # ==================== 模式常量 ====================
@@ -60,6 +61,48 @@ STREAM_SR = 8000
 STREAM_CH = 1
 STREAM_SW = 2
 BYTES_PER_20MS = STREAM_SR * STREAM_SW * 20 // 1000  # 320
+
+
+def _default_nav_audio_active() -> bool:
+    """默认：不认为有导航语音在播（由接线层注入真实实现）。"""
+    return False
+
+
+def _normalize_echo_text(text: str) -> str:
+    """回声比对用规范化：去标点/空白，统一小写，只保留中英文与数字。"""
+    if not text:
+        return ""
+    return re.sub(r"[^\u4e00-\u9fffA-Za-z0-9]", "", text.lower())
+
+
+def _text_similarity(a: str, b: str) -> float:
+    if not a or not b:
+        return 0.0
+    return SequenceMatcher(None, a, b).ratio()
+
+
+# 唤醒词：呼唤“明眸”才接入千问聊天（导航模式下默认不闲聊）。
+# 兼容 ASR 对“明眸”的常见误识别（名眸/明谋/明某/名模…）与拼音拼写。
+WAKE_WORDS = ("明眸", "名眸", "明谋", "明某", "名模", "明磨", "铭眸", "明牟")
+WAKE_PINYIN = ("mingmou", "míngmóu")
+
+
+def _wake_compact(text: str) -> str:
+    return re.sub(r"[\s，。！？!?,.、~～：:]+", "", (text or "").lower())
+
+
+def _is_wake_word(text: str) -> bool:
+    compact = _wake_compact(text)
+    if any(w in compact for w in WAKE_WORDS):
+        return True
+    return any(p in compact for p in WAKE_PINYIN)
+
+
+def _strip_wake(text: str) -> str:
+    t = text or ""
+    for w in WAKE_WORDS + WAKE_PINYIN:
+        t = t.replace(w, "")
+    return re.sub(r"^[\s，。！？!?,.、]+|[\s，。！？!?,.、]+$", "", t)
 
 
 # ==================== 占位函数（TODO 替换，不重写底层） ====================
@@ -304,8 +347,14 @@ class VoiceSessionManager:
         self.amap_next_step = deps.get("amap_next_step", amap_next_step)
         self.vad_is_speech = deps.get("vad_is_speech", vad_is_speech)
         self.llm_intent = deps.get("llm_intent", llm_intent)
+        self.nav_audio_active = deps.get("nav_audio_active", _default_nav_audio_active)
         # 允许测试/用户覆盖内置 tts_speak（默认 None = 用内置分片实现）
         self._tts_speak_override = deps.get("tts_speak")
+
+        # —— 回声抑制：记录近期播报文本，ASR final 与之相似则忽略 ——
+        self._recent_tts: List[Tuple[float, str]] = []
+        self._echo_window_s = float(deps.get("echo_window_s", 10.0))
+        self._echo_similarity = float(deps.get("echo_similarity", 0.6))
 
         # —— 会话状态 ——
         self._lock = asyncio.Lock()
@@ -337,12 +386,46 @@ class VoiceSessionManager:
     def _is_current_session(self, session_id: str) -> bool:
         return bool(session_id) and session_id == self._active_playback_session
 
+    # ==================== 回声抑制 ====================
+    def record_spoken_text(self, text: str) -> None:
+        """记录一段即将/已经播报的文本，用于回声识别（防止自问自答）。"""
+        t = _normalize_echo_text(text)
+        if not t:
+            return
+        now = time.monotonic()
+        self._recent_tts.append((now, t))
+        # 清理过期记录
+        self._recent_tts = [
+            (ts, s) for ts, s in self._recent_tts if now - ts < self._echo_window_s
+        ]
+
+    def _is_echo(self, text: str) -> bool:
+        """判断 ASR final 是否疑似回声（与近期播报文本高度相似）。"""
+        t = _normalize_echo_text(text)
+        if not t:
+            return False
+        now = time.monotonic()
+        for ts, s in self._recent_tts:
+            if now - ts > self._echo_window_s:
+                continue
+            if not s:
+                continue
+            # 回声通常是播报文本的一部分，或被 ASR 轻微改写
+            if t in s or s in t:
+                return True
+            if _text_similarity(t, s) >= self._echo_similarity:
+                return True
+        return False
+
     # ==================== 音频输出（统一入口，带 SESSION_ID） ====================
-    async def tts_speak(self, text: str, session_id: str) -> None:
+    async def tts_speak(self, text: str, session_id: str, wait_nav: bool = False) -> None:
         """把文本合成为 PCM16 并以 20ms 分片下发 ESP32。
 
         每片携带 session_id + seq；发送前检查会话是否仍然有效，被打断则立即中止，
         从而让 ESP32 能按 SESSION_ID 丢弃乱序/延迟的旧分片。
+
+        wait_nav=True（聊天回答）时：每发一片前先等导航播报结束，导航插播时
+        聊天暂停、导航播完后再继续，实现「导航播报优先级高于聊天」。
         """
         if self._tts_speak_override is not None:
             await self._tts_speak_override(text, session_id)
@@ -358,9 +441,15 @@ class VoiceSessionManager:
         if not pcm:
             return
 
+        # 记录本次播报文本，供回声识别（防止播报被麦克风拾取后自问自答）
+        self.record_spoken_text(text)
+
         seq = 0
         offset = 0
         while offset < len(pcm):
+            # 导航播报优先：聊天回答在导航插播时暂停，等导航播完再继续
+            if wait_nav:
+                await self._wait_nav_idle()
             # 被打断（会话已被替换/置空）→ 停止发送本会话剩余分片
             if not self._is_current_session(session_id):
                 return
@@ -379,7 +468,8 @@ class VoiceSessionManager:
                 print(f"[SESSION] 下发音频分片失败: {exc}")
             seq += 1
             offset += BYTES_PER_20MS
-            await asyncio.sleep(0)  # 让出事件循环，保证打断能及时被调度
+            # 聊天按 20ms 节拍逐片发送，给导航插播留出时机
+            await asyncio.sleep(0.02 if wait_nav else 0)
 
     async def _send_stop_tts(self, session_id: str) -> None:
         """下发 stop_tts 给 ESP32，令其立即停止该会话的音频播放。"""
@@ -421,6 +511,14 @@ class VoiceSessionManager:
         await self._cancel_chat_task()
         await self._pause_nav_broadcast()
 
+    async def _interrupt_chat_output(self) -> None:
+        """打断聊天播报（不影响导航播报）。"""
+        sid = self._active_playback_session
+        if sid:
+            await self._send_stop_tts(sid)
+            self._active_playback_session = None
+        await self._cancel_chat_task()
+
     async def start_vad_monitor(self) -> None:
         """启动后台 VAD 轮询：检测到人声上升沿即触发打断。
 
@@ -452,11 +550,10 @@ class VoiceSessionManager:
 
     async def _chat_worker(self, text: str, session_id: str) -> None:
         try:
-            # 千问说话期间暂停导航播报（导航实例保留）
-            await self._pause_nav_broadcast()
             answer = await self.qwen_chat_reply(text)
+            # 聊天回答按导航优先级播报：导航插播时暂停、播完再继续
             if answer and self._is_current_session(session_id):
-                await self.tts_speak(answer, session_id)
+                await self.tts_speak(answer, session_id, wait_nav=True)
         except asyncio.CancelledError:
             raise
         except Exception as exc:  # noqa: BLE001
@@ -467,8 +564,6 @@ class VoiceSessionManager:
                 self._chat_task = None
             if self._is_current_session(session_id):
                 self._active_playback_session = None
-            # 千问说完恢复导航播报
-            await self._resume_nav_broadcast()
 
     async def _cancel_chat_task(self) -> None:
         task = self._chat_task
@@ -480,6 +575,20 @@ class VoiceSessionManager:
             except (asyncio.CancelledError, Exception):  # noqa: BLE001
                 pass
 
+    async def _wait_nav_idle(self) -> None:
+        """等待当前导航播报结束（导航播报优先级高于聊天）。"""
+        while True:
+            try:
+                result = self.nav_audio_active()
+                if asyncio.iscoroutine(result):
+                    result = await result
+                active = bool(result)
+            except Exception:  # noqa: BLE001
+                active = False
+            if not active:
+                return
+            await asyncio.sleep(0.05)
+
     # ==================== 导航（暂停 ≠ 销毁） ====================
     async def _start_nav(self, destination: str) -> None:
         if not self._nav_running:
@@ -488,7 +597,9 @@ class VoiceSessionManager:
             self._nav_task = asyncio.create_task(self._nav_worker())
         self._nav_paused = False
         try:
-            await self.amap_start_nav(destination)
+            spoken_text = await self.amap_start_nav(destination)
+            if spoken_text:
+                self.record_spoken_text(str(spoken_text))
         except Exception as exc:  # noqa: BLE001
             print(f"[SESSION] 启动导航异常: {exc}")
 
@@ -560,7 +671,7 @@ class VoiceSessionManager:
 
     # ==================== 路由主入口 ====================
     async def handle_asr_final(self, text: str) -> Dict[str, Any]:
-        """ASR final 文本入口：先打断当前输出，再解析意图并路由。
+        """ASR final 文本入口：回声过滤 + 意图路由（导航播报优先于聊天）。
 
         返回 dict 便于测试断言：{"mode", "action", "destination"}。
         """
@@ -568,23 +679,27 @@ class VoiceSessionManager:
         if not text:
             return {"mode": self.mode, "action": "none", "destination": None}
 
-        async with self._lock:
-            # 用户说完一句话，先打断旧输出（含聊天播报/导航播报）
-            await self._interrupt_current_output()
+        # 回声抑制：识别文本与近期播报文本高度相似 → 忽略，避免自问自答。
+        if self._is_echo(text):
+            print(f"[SESSION] 疑似回声输入，忽略: {text}")
+            return {"mode": self.mode, "action": "echo_ignored", "destination": None}
 
+        async with self._lock:
             intent = await parse_intent(text, self.llm_intent)
             action = intent.get("action", "")
             destination = intent.get("destination")
             is_nav = intent.get("intent") == "nav"
 
-            # 1) 停止导航 / 切回聊天
+            # 1) 停止导航 / 切回聊天：打断所有输出并销毁导航
             if action == "stop_nav":
+                await self._interrupt_current_output()
                 await self._stop_nav()
                 await self._set_mode(MODE_QWEN_CHAT)
                 return {"mode": self.mode, "action": "stop_nav", "destination": None}
 
-            # 2) 导航意图
+            # 2) 导航意图：导航优先级最高，打断聊天播报后启动导航
             if is_nav:
+                await self._interrupt_chat_output()
                 await self._set_mode(MODE_AMAP_NAV)
                 if destination:
                     await self._start_nav(destination)
@@ -594,8 +709,23 @@ class VoiceSessionManager:
                     "destination": destination,
                 }
 
-            # 3) 聊天意图：导航模式下不切模式、不销毁导航，仅千问回答
-            await self._start_chat(text)
+            # 3) 聊天意图
+            wake = _is_wake_word(text)
+            if self.mode == MODE_AMAP_NAV and not wake:
+                # 导航模式下未呼唤“明眸”，不接入千问聊天
+                print(f"[SESSION] 导航模式未唤醒，忽略闲聊: {text}")
+                return {"mode": self.mode, "action": "chat_locked", "destination": None}
+
+            if wake:
+                # 明眸唤醒：退出导航并切到聊天模式，千问即可接入
+                await self._stop_nav()
+                await self._set_mode(MODE_QWEN_CHAT)
+                chat_text = _strip_wake(text) or "你好"
+            else:
+                chat_text = text
+
+            await self._interrupt_chat_output()
+            await self._start_chat(chat_text)
             return {"mode": self.mode, "action": "ask_qwen", "destination": None}
 
     # ==================== 关闭 ====================
@@ -746,25 +876,39 @@ async def _run_tests() -> None:
     await mgr.close()
 
     print("=" * 64)
-    print("场景 3: 导航途中打断问「今天天气怎么样」→ 导航后台继续 + 千问回答")
+    print("场景 3: 导航运行中提问（未唤明眸）→ 不接入千问（chat_locked）")
     rec.log.clear()
     rec.gates.clear()
     fake_next_step.called = False  # type: ignore[attr-defined]
     mgr = VoiceSessionManager(deps=dict(deps))
     await mgr.handle_asr_final("导航去人民公园")  # 进入导航，模式=amap_nav
     await wait_gate(1)                       # 导航开始播报（gate1 是导航）
-    r = await mgr.handle_asr_final("今天天气怎么样")  # 打断导航播报并提问
-    check("模式仍=amap_nav(导航不销毁)", r["mode"] == MODE_AMAP_NAV)
-    check("动作=ask_qwen", r["action"] == "ask_qwen")
+    r = await mgr.handle_asr_final("今天天气怎么样")  # 未唤明眸的闲聊
+    check("动作=chat_locked(未唤醒不聊天)", r["action"] == "chat_locked")
+    check("模式仍=amap_nav", r["mode"] == MODE_AMAP_NAV)
     check("未调用 nav_stop", "nav_stop" not in rec.log)
-    check("导航播报被暂停", "nav_pause" in rec.log)
+    check("未触发聊天播报", len(rec.gates) == 1)
+    await mgr.close()
+
+    print("=" * 64)
+    print("场景 3b: 导航运行中呼唤「明眸」→ 退出导航、切到聊天、千问回答")
+    rec.log.clear()
+    rec.gates.clear()
+    fake_next_step.called = False  # type: ignore[attr-defined]
+    mgr = VoiceSessionManager(deps=dict(deps))
+    await mgr.handle_asr_final("导航去人民公园")  # 进入导航
+    await wait_gate(1)                       # 导航开始播报
+    r = await mgr.handle_asr_final("明眸，今天天气怎么样")
+    check("动作=ask_qwen", r["action"] == "ask_qwen")
+    check("模式=qwen_chat", r["mode"] == MODE_QWEN_CHAT)
+    check("导航已停止", "nav_stop" in rec.log)
     chat_gate = await wait_gate(2)           # 聊天回答开始播报
-    chat_gate.set()                          # 聊天回答播报完成
-    for _ in range(500):                     # 等待 chat worker 收尾
-        if "nav_resume" in rec.log:
+    check("聊天已播报", len(rec.gates) >= 2)
+    chat_gate.set()
+    for _ in range(500):
+        if mgr._chat_task is None:
             break
         await asyncio.sleep(0.002)
-    check("恢复过导航播报", "nav_resume" in rec.log)
     await mgr.close()
 
     print("=" * 64)
@@ -784,11 +928,67 @@ async def _run_tests() -> None:
     await mgr.close()
 
     print("=" * 64)
+    print("场景 5: 聊天回答中导航插播 → 聊天暂停、导航播完再继续（导航优先）")
+    sent: List[str] = []
+    nav_busy = {"flag": False}
+
+    async def fake_synth(text: str) -> bytes:
+        return bytes(BYTES_PER_20MS * 8)  # 8 个 20ms 分片
+
+    async def fake_send(payload: Dict[str, Any]) -> None:
+        if payload.get("type") == "tts_chunk":
+            sent.append("chunk")
+        elif payload.get("type") == "stop_tts":
+            sent.append("stop")
+
+    def fake_nav_active_sync() -> bool:
+        return nav_busy["flag"]
+
+    deps5 = {
+        "synthesize_pcm16_8k": fake_synth,
+        "send_to_esp32": fake_send,
+        "qwen_chat_reply": fake_qwen,
+        "nav_audio_active": fake_nav_active_sync,
+        "llm_intent": lambda t: None,
+    }
+    mgr = VoiceSessionManager(deps=deps5)
+    await mgr.handle_asr_final("你好")  # 触发聊天回答
+    for _ in range(500):
+        if len(sent) >= 2:
+            break
+        await asyncio.sleep(0.002)
+    check("聊天已开始播报", len(sent) >= 2)
+    nav_busy["flag"] = True              # 导航插播
+    await asyncio.sleep(0.15)            # 给 chat worker 机会尝试发送
+    paused_count = len(sent)
+    check("导航插播时聊天暂停(未发完)", paused_count < 8)
+    await asyncio.sleep(0.1)
+    check("导航期间无新分片", len(sent) == paused_count)
+    nav_busy["flag"] = False             # 导航结束
+    for _ in range(1000):
+        if len(sent) >= 8:
+            break
+        await asyncio.sleep(0.002)
+    check("导航结束后聊天继续播完", len(sent) >= 8)
+    await mgr.close()
+
+    print("=" * 64)
+    print("场景 6: 播报后的回声文本被忽略（自问自答防护）")
+    rec.log.clear()
+    rec.gates.clear()
+    mgr = VoiceSessionManager(deps=dict(deps))
+    mgr.record_spoken_text("今天天气很好，适合出门散步。")
+    r = await mgr.handle_asr_final("今天天气很好")
+    check("回声被忽略", r["action"] == "echo_ignored")
+    check("未触发新聊天", len(rec.gates) == 0 and len(rec.log) == 0)
+    await mgr.close()
+
+    print("=" * 64)
     print("全部测试完成。")
 
 
 if __name__ == "__main__":
-    # 运行离线测试，验证 4 个场景
+    # 运行离线测试，验证 6 个场景
     try:
         asyncio.run(_run_tests())
     except KeyboardInterrupt:

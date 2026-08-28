@@ -10,24 +10,30 @@ import (
 )
 
 // 默认系统提示词：用于 DashScope Realtime 连接，约束 AI 结合设备音视频回答。
-const defaultDashScopeInstructions = "你是连接在 XIAO ESP32S3 Sense 设备上的多模态语音助手。请结合实时音频和摄像头画面，用简洁、自然、友好的中文回答用户；如果画面或语音信息不足，就明确说明你不确定。"
+// 规则：必须尽力回答，绝不能回复“我不会/不知道/无法回答”等拒绝性表述。
+const defaultDashScopeInstructions = "你是连接在 XIAO ESP32S3 Sense 设备上的多模态语音助手，你的名字叫“明眸”。请结合实时音频和摄像头画面，用简洁、自然、友好的中文回答用户。你必须始终尽力回答用户的问题：绝不回复“我不会”“不知道”“无法回答”“不能回答”等拒绝性表述；如果信息不足，就用引导式追问或给出你已知的相近信息来帮助用户。"
+
+// 默认导航模式提示词：进入导航后千问保持静默，只做障碍物/危险物避障提醒；
+// 用户呼唤“明眸”时才由 switch_to_chat 切回问答，因此这里不允许回答任何问题。
+const defaultDashScopeNavigationInstructions = "你现在是导盲眼镜的视觉避障助手。请结合实时摄像头画面，只在发现障碍物、危险物品、行人、车辆、台阶或需要避让的物体时，用简短明确的中文提醒用户（例如“前方有障碍物，请向右绕行”）。没有危险时始终保持安静：不闲聊、不回答任何问题，也不要说“我不会、不知道”等拒绝性语句。"
 
 // Config 汇总服务端所有可配置项。配置来源优先级：
 // 命令行参数 > 环境变量/.env > 代码默认值。
 type Config struct {
-	HTTPAddr              string
-	UDPAddr               string
-	DeviceToken           string
-	CORSAllowOrigin       string
-	VisionWorkerURL       string
-	VisionFrameIntervalMs int
-	DashScopeAPIKey       string
-	DashScopeRegion       string
-	DashScopeModel        string
-	DashScopeVoice        string
-	DashScopeInstructions string
-	DashScopeEnableSearch bool
-	NavigationVoiceDir    string
+	HTTPAddr                        string
+	UDPAddr                         string
+	DeviceToken                     string
+	CORSAllowOrigin                 string
+	VisionWorkerURL                 string
+	VisionFrameIntervalMs           int
+	DashScopeAPIKey                 string
+	DashScopeRegion                 string
+	DashScopeModel                  string
+	DashScopeVoice                  string
+	DashScopeInstructions           string
+	DashScopeNavigationInstructions string
+	DashScopeEnableSearch           bool
+	NavigationVoiceDir              string
 }
 
 func LoadConfig(args []string) (Config, error) {
@@ -35,19 +41,20 @@ func LoadConfig(args []string) (Config, error) {
 	loadEnvFiles()
 
 	cfg := Config{
-		HTTPAddr:              envOrDefault("SERVER_HTTP_ADDR", ":8888"),
-		UDPAddr:               envOrDefault("SERVER_UDP_ADDR", ":8888"),
-		DeviceToken:           envOrDefault("DEVICE_TOKEN", "change-me"),
-		CORSAllowOrigin:       envOrDefault("CORS_ALLOW_ORIGIN", "*"),
-		VisionWorkerURL:       envOrDefault("VISION_WORKER_URL", "http://127.0.0.1:18082"),
-		VisionFrameIntervalMs: envInt("VISION_FRAME_INTERVAL_MS", 450),
-		DashScopeAPIKey:       envOrDefault("DASHSCOPE_API_KEY", ""),
-		DashScopeRegion:       envOrDefault("DASHSCOPE_REGION", "cn"),
-		DashScopeModel:        envOrDefault("DASHSCOPE_MODEL", "qwen3-omni-flash-realtime"),
-		DashScopeVoice:        envOrDefault("DASHSCOPE_VOICE", "Ethan"),
-		DashScopeInstructions: envOrDefault("DASHSCOPE_INSTRUCTIONS", defaultDashScopeInstructions),
-		DashScopeEnableSearch: envBool("DASHSCOPE_ENABLE_SEARCH", false),
-		NavigationVoiceDir:    envOrDefault("NAVIGATION_VOICE_DIR", "../python_worker/voice"),
+		HTTPAddr:                        envOrDefault("SERVER_HTTP_ADDR", ":8888"),
+		UDPAddr:                         envOrDefault("SERVER_UDP_ADDR", ":8888"),
+		DeviceToken:                     envOrDefault("DEVICE_TOKEN", "change-me"),
+		CORSAllowOrigin:                 envOrDefault("CORS_ALLOW_ORIGIN", "*"),
+		VisionWorkerURL:                 envOrDefault("VISION_WORKER_URL", "http://127.0.0.1:18082"),
+		VisionFrameIntervalMs:           envInt("VISION_FRAME_INTERVAL_MS", 450),
+		DashScopeAPIKey:                 envOrDefault("DASHSCOPE_API_KEY", ""),
+		DashScopeRegion:                 envOrDefault("DASHSCOPE_REGION", "cn"),
+		DashScopeModel:                  envOrDefault("DASHSCOPE_MODEL", "qwen3-omni-flash-realtime"),
+		DashScopeVoice:                  envOrDefault("DASHSCOPE_VOICE", "Ethan"),
+		DashScopeInstructions:           envOrDefault("DASHSCOPE_INSTRUCTIONS", defaultDashScopeInstructions),
+		DashScopeNavigationInstructions: envOrDefault("DASHSCOPE_NAVIGATION_INSTRUCTIONS", defaultDashScopeNavigationInstructions),
+		DashScopeEnableSearch:           envBool("DASHSCOPE_ENABLE_SEARCH", false),
+		NavigationVoiceDir:              envOrDefault("NAVIGATION_VOICE_DIR", "../python_worker/voice"),
 	}
 
 	fs := flag.NewFlagSet("xiao-stream", flag.ContinueOnError)
@@ -64,6 +71,7 @@ func LoadConfig(args []string) (Config, error) {
 	fs.StringVar(&cfg.DashScopeModel, "dashscope-model", cfg.DashScopeModel, "DashScope realtime model name")
 	fs.StringVar(&cfg.DashScopeVoice, "dashscope-voice", cfg.DashScopeVoice, "DashScope realtime voice")
 	fs.StringVar(&cfg.DashScopeInstructions, "dashscope-instructions", cfg.DashScopeInstructions, "DashScope system instructions")
+	fs.StringVar(&cfg.DashScopeNavigationInstructions, "dashscope-navigation-instructions", cfg.DashScopeNavigationInstructions, "DashScope navigation mode instructions for obstacle avoidance prompts")
 	fs.BoolVar(&cfg.DashScopeEnableSearch, "dashscope-enable-search", cfg.DashScopeEnableSearch, "enable DashScope realtime web search")
 	fs.StringVar(&cfg.NavigationVoiceDir, "navigation-voice-dir", cfg.NavigationVoiceDir, "directory containing pregenerated navigation TTS wav files and map.zh-CN.json")
 	if err := fs.Parse(args); err != nil {

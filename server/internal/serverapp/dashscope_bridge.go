@@ -32,12 +32,13 @@ const (
 var errDashScopeNotConnected = errors.New("DashScope bridge not connected")
 
 type dashScopeConfig struct {
-	APIKey       string
-	Region       string
-	Model        string
-	Voice        string
-	Instructions string
-	EnableSearch bool
+	APIKey                 string
+	Region                 string
+	Model                  string
+	Voice                  string
+	Instructions           string
+	NavigationInstructions string
+	EnableSearch           bool
 }
 
 type aiStateMessage struct {
@@ -314,13 +315,13 @@ func (b *dashScopeBridge) audioLoop() {
 }
 
 func (b *dashScopeBridge) imageLoop() {
-	// 图像发送循环：只有收到过音频后才发送图片，避免无人说话时持续消耗模型输入。
+	// 图像发送循环：聊天模式在收到过音频后才发送图片；导航模式持续送图用于避障识别。
 	ticker := time.NewTicker(dashScopeImageSendInterval)
 	defer ticker.Stop()
 
 	var lastSentSeq uint64
 	for range ticker.C {
-		if b.isInputPaused() || !b.audioWasSent() || b.isInputLocked() {
+		if !b.isInputPaused() && (!b.audioWasSent() || b.isInputLocked()) {
 			continue
 		}
 
@@ -354,12 +355,6 @@ func (b *dashScopeBridge) handleEvent(payload []byte) {
 		if session := asMap(event["session"]); session != nil {
 			b.setSessionID(asString(session["id"]))
 		}
-		return
-	}
-	if b.isInputPaused() && eventType != "error" &&
-		eventType != "conversation.item.input_audio_transcription.completed" &&
-		eventType != "input_audio_buffer.speech_started" {
-		// 导盲模式只保留 ASR 转写和本地模式切换，不允许模型回答或下发 AI 音频。
 		return
 	}
 
@@ -463,7 +458,16 @@ func (b *dashScopeBridge) handleEvent(payload []byte) {
 }
 
 func (b *dashScopeBridge) sessionUpdateEvent() map[string]any {
-	return b.sessionUpdateEventWithInstructions(b.cfg.Instructions)
+	return b.sessionUpdateEventWithInstructions(b.currentInstructions())
+}
+
+// currentInstructions 返回当前模式应使用的系统指令：
+// 导航模式聚焦障碍物/物品避障提示，聊天模式使用常规问答指令。
+func (b *dashScopeBridge) currentInstructions() string {
+	if b.isInputPaused() && b.cfg.NavigationInstructions != "" {
+		return b.cfg.NavigationInstructions
+	}
+	return b.cfg.Instructions
 }
 
 func (b *dashScopeBridge) sessionUpdateEventWithInstructions(instructions string) map[string]any {
@@ -498,8 +502,10 @@ func (b *dashScopeBridge) sessionUpdateEventWithInstructions(instructions string
 }
 
 func (b *dashScopeBridge) handleSpeechStarted(event map[string]any) {
-	if b.isInputLocked() {
-		return
+	// 用户开口说话：若模型正在回答，立即打断并停止设备播放，
+	// 让用户能用语音中断后继续提问或切换模式。
+	if b.isResponding() {
+		b.interruptForUserSpeech()
 	}
 	b.broadcastAIEvent("input_audio_buffer.speech_started", event)
 }
@@ -534,9 +540,6 @@ func (b *dashScopeBridge) handleInputTranscriptCompleted(event map[string]any) {
 
 	intent, ok := b.server.skillIntentFromTranscript(transcript)
 	if !ok {
-		return
-	}
-	if b.isInputPaused() && intent.Name != "switch_to_chat" {
 		return
 	}
 
@@ -861,6 +864,11 @@ audioQueueDrained:
 		}
 	}
 	if changed {
+		// 模式切换后同步 DashScope 会话指令：导航模式聚焦障碍物/物品避障提示，
+		// 聊天模式恢复常规问答。
+		if err := b.sendEvent(b.sessionUpdateEvent()); err != nil && !errors.Is(err, errDashScopeNotConnected) {
+			log.Printf("DashScope instruction update failed: %v", err)
+		}
 		b.broadcastState()
 	}
 }
@@ -882,8 +890,23 @@ func (b *dashScopeBridge) InterruptAudio() {
 	}
 }
 
+// interruptForUserSpeech 在用户开口打断时取消模型回答并停止设备播放，
+// 但不清空麦克风音频队列，确保用户这句话能继续被识别。
+func (b *dashScopeBridge) interruptForUserSpeech() {
+	if b == nil {
+		return
+	}
+	if err := b.cancelResponse(); err != nil && !errors.Is(err, errDashScopeNotConnected) {
+		log.Printf("DashScope response cancel on user speech failed: %v", err)
+	}
+	if b.server != nil {
+		b.server.clearDevicePlaybackQueue()
+	}
+}
+
 func (b *dashScopeBridge) inputLockedAt(now time.Time) bool {
-	// 模型正在回答，或刚收到下行音频尚未播放完时，都不接收新的麦克风输入。
+	// 模型回答期间以及音频刚播完的尾巴窗口都锁住麦克风输入，
+	// 防止扬声器播放声被回采后再次触发，造成自问自答。
 	if b.responding {
 		return true
 	}

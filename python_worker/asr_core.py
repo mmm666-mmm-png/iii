@@ -9,7 +9,7 @@ DashScope 实时 ASR 回调封装。
 3. 识别“停下/别说了/停止”等热词并触发系统硬重置；
 4. 在 AI 正在播报时禁止普通语音打断，避免多轮回答重叠。
 """
-import os, json, asyncio
+import os, json, asyncio, time
 from typing import Any, Dict, List, Optional, Callable, Tuple
 
 ASR_DEBUG_RAW = os.getenv("ASR_DEBUG_RAW", "0") == "1"
@@ -134,6 +134,14 @@ class ASRCallback:
         self._last_final_text: str = ""       # 以句末 final 为准
         self._hot_interrupted: bool = False   # 本句是否因热词触发过复位（防抖）
 
+        # —— final 防抖：400ms 内涌来的多条 final 只提交最后稳定的一条 ——
+        self._final_debounce_s = 0.4
+        self._final_gen = 0                    # 代际计数，旧任务据此自过期
+        # —— 重复文本过滤：1.5s 内相同的 final 不再重复提交（抑制回声反馈）——
+        self._repeat_filter_s = 1.5
+        self._last_submitted_text = ""
+        self._last_submitted_at = 0.0
+
         self._ui_partial = ui_broadcast_partial
         self._ui_final   = ui_broadcast_final
         self._is_playing = is_playing_now_fn
@@ -164,6 +172,49 @@ class ASRCallback:
                 return True
         return False
 
+    def _schedule_final_submit(self, text: str):
+        """400ms 防抖提交 ASR final。
+
+        每次 final 都令代际计数 `_final_gen` 自增；先前已排队等待提交的任务
+        醒来后若发现代际已不匹配，即被标记为「过期」并丢弃。这样同一时刻
+        涌来的多条 final 只会提交「最后一条稳定」的结果。
+        """
+        self._final_gen += 1
+        gen = self._final_gen
+
+        async def _debounced():
+            try:
+                await asyncio.sleep(self._final_debounce_s)
+            except asyncio.CancelledError:
+                return
+            if gen != self._final_gen:
+                # 已有更新的 final 到达，本任务过期，丢弃
+                print(f"[ASR DEBOUNCE] 丢弃过期 final: '{_shorten(text)}'", flush=True)
+                return
+            # 1.5 秒重复文本过滤：抑制播报回声/重复识别反复触发
+            if self._is_recent_duplicate(text):
+                print(f"[ASR DUP-FILTER] 过滤 1.5s 内重复文本: '{_shorten(text)}'", flush=True)
+                return
+            async with self._interrupt_lock:
+                self._last_submitted_text = text
+                self._last_submitted_at = time.monotonic()
+                print(f"[LLM INPUT TEXT] {text}", flush=True)
+                await self._start_ai(text)
+
+        try:
+            self._post(_debounced())
+        except Exception:
+            pass
+
+    def _is_recent_duplicate(self, text: str) -> bool:
+        """判断是否在 1.5s 内重复提交过相同文本（回声/重复识别过滤）。"""
+        now = time.monotonic()
+        return (
+            bool(text)
+            and text == self._last_submitted_text
+            and now - self._last_submitted_at < self._repeat_filter_s
+        )
+
     def _handle(self, event: Any):
         """处理 SDK 回调事件：热词优先，其次 UI partial，最后 final 驱动 AI。"""
         if ASR_DEBUG_RAW:
@@ -183,6 +234,8 @@ class ASRCallback:
         # ---------- ① 热词优先：命中就全清零并短路，绝不送 LLM ----------
         if not self._hot_interrupted and self._has_hotword(text):
             self._hot_interrupted = True
+            # 热词复位后，使所有待提交的防抖任务立即过期
+            self._final_gen += 1
 
             async def _hot_reset():
                 async with self._interrupt_lock:
@@ -212,14 +265,8 @@ class ASRCallback:
                 pass
 
             if (not self._is_playing()) and final_text:
-                async def _run_final():
-                    async with self._interrupt_lock:
-                        print(f"[LLM INPUT TEXT] {final_text}", flush=True)
-                        await self._start_ai(final_text)
-                try:
-                    self._post(_run_final())
-                except Exception:
-                    pass
+                # 走 400ms 防抖：旧 final 标记过期，只提交最后稳定的一条
+                self._schedule_final_submit(final_text)
 
             # 复位进入下一句
             self._last_partial_for_ui = ""

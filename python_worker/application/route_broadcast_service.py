@@ -100,9 +100,9 @@ class RouteBroadcastService:
                 if not pcm_list:
                     logger.warning("路线播报未生成任何语音片段，可能 TTS 不可用")
                     return
-                from audio_player import play_pcm_sequence
+                from audio_player import play_navigation_pcm_sequence_and_wait
 
-                play_pcm_sequence(pcm_list)
+                play_navigation_pcm_sequence_and_wait(pcm_list)
             except Exception as exc:
                 logger.error("路线语音播报失败: %s", exc)
 
@@ -121,9 +121,9 @@ class RouteBroadcastService:
                 if not pcm:
                     logger.warning("自由文本播报未生成语音，可能 TTS 不可用")
                     return
-                from audio_player import play_pcm_sequence
+                from audio_player import play_navigation_pcm_and_wait
 
-                play_pcm_sequence([pcm])
+                play_navigation_pcm_and_wait(pcm)
             except Exception as exc:
                 logger.error("自由文本语音播报失败: %s", exc)
 

@@ -70,16 +70,49 @@ _is_playing = False  # 标记是否正在播放音频
 _playing_lock = threading.Lock()  # 播放锁
 _initialized = False
 _last_play_ts = 0.0  # 记录上次播放结束时间，用于决定预热静音长度
+_last_play_end_ts = 0.0  # 上次本地音频播放结束时刻（monotonic），用于回声抑制宽限
+# 本地音频播放结束后的回声抑制宽限：ASR final 若在播报结束后不久到达，
+# 可能是设备扬声器播报被麦克风拾取后的回声，需抑制，避免「自问自答」。
+# 默认 3 秒（整段播报结束后再延后 3 秒才恢复语音识别）。
+ECHO_SUPPRESS_SECONDS = float(os.getenv("AIGLASS_ECHO_SUPPRESS_SECONDS", "3.0"))
+
+# 导航播报占用计数：>0 表示当前有导航语音在排队或播放（优先级高于聊天）。
+_nav_broadcast_lock = threading.Lock()
+_nav_broadcast_active = 0
+# 导航播报批次的完成哨兵（放入播放队列末尾，用于等待整段播完）。
+_NAV_QUEUE_SENTINEL = object()
+
+
+def nav_broadcast_begin() -> None:
+    """标记一段导航语音开始排队/播放。"""
+    global _nav_broadcast_active
+    with _nav_broadcast_lock:
+        _nav_broadcast_active += 1
+
+
+def nav_broadcast_end() -> None:
+    """标记一段导航语音播放完成。"""
+    global _nav_broadcast_active
+    with _nav_broadcast_lock:
+        _nav_broadcast_active = max(0, _nav_broadcast_active - 1)
+
+
+def is_navigation_audio_active() -> bool:
+    """当前是否有导航语音正在排队或播放（供聊天播报让路）。"""
+    with _nav_broadcast_lock:
+        return _nav_broadcast_active > 0
 
 
 def is_audio_playing() -> bool:
-    """当前是否有本地音频（预录语音 / 动态 TTS 播报）正在播放。
+    """当前是否有本地音频（预录语音 / 动态 TTS 播报）正在播放（含回声宽限）。
 
-    供 ASR 侧判断：系统播报期间不回传 ASR 结果给千问，避免播报回声
-    被麦克风拾取后又被识别成输入、引发「自问自答」。
+    供 ASR 侧判断：系统播报期间及其结束后一小段时间内不回传 ASR 结果给千问，
+    避免播报回声被麦克风拾取后又被识别成输入、引发「自问自答」。
     """
     with _playing_lock:
-        return _is_playing
+        if _is_playing:
+            return True
+        return (time.monotonic() - _last_play_end_ts) < ECHO_SUPPRESS_SECONDS
 
 
 def load_wav_file(filepath):
@@ -212,6 +245,18 @@ def _audio_worker():
                     _, audio_data = priority_data
                 else:
                     audio_data = priority_data
+                # 导航播报批次完成哨兵：标记整段播完，唤醒等待方
+                if (
+                    isinstance(audio_data, tuple)
+                    and len(audio_data) == 2
+                    and audio_data[0] is _NAV_QUEUE_SENTINEL
+                ):
+                    done = audio_data[1]
+                    try:
+                        done.set()
+                    except Exception:
+                        pass
+                    continue
                 await _broadcast_audio_optimized(audio_data)
             except Exception as e:
                 print(f"[AUDIO] 工作线程错误: {e}")
@@ -220,7 +265,7 @@ def _audio_worker():
 
 async def _broadcast_audio_optimized(pcm_data: bytes):
     """给 PCM 前后补少量静音，再交给底层 20ms 节拍发送，减少开头被吞音。"""
-    global _last_play_ts, _is_playing
+    global _last_play_ts, _is_playing, _last_play_end_ts
     try:
         # 设置播放标志
         with _playing_lock:
@@ -247,9 +292,10 @@ async def _broadcast_audio_optimized(pcm_data: bytes):
     except Exception as e:
         print(f"[AUDIO] 广播音频失败: {e}")
     finally:
-        # 清除播放标志
+        # 清除播放标志，并记录结束时刻用于回声抑制宽限
         with _playing_lock:
             _is_playing = False
+            _last_play_end_ts = time.monotonic()
 
 def initialize_audio_system():
     """合并语音映射、预加载音频并启动后台播放线程。"""
@@ -376,6 +422,57 @@ def play_pcm_sequence(pcm_list):
         except queue.Full:
             print("[AUDIO] 队列满，后续播报片段被丢弃")
             break
+
+
+def _enqueue_pcm(pcm_data: bytes, timeout: float = 60.0) -> None:
+    """把一段 PCM 放入播放队列（阻塞，避免丢段）。"""
+    global _audio_priority
+    _audio_priority += 1
+    try:
+        _audio_queue.put((_audio_priority, pcm_data), timeout=timeout)
+    except queue.Full:
+        print("[AUDIO] 播放队列满，后续播报片段被丢弃")
+
+
+def play_pcm_sequence_and_wait(pcm_list, timeout: float = 120.0) -> bool:
+    """顺序播放一串 8kHz mono PCM16 并等待全部播放完成（供导航播报使用）。
+
+    在播放队列末尾放入完成哨兵，等播放线程消费到哨兵后再返回，
+    从而让调用方能在整段语音真正播完后继续（例如让聊天播报等导航播完）。
+    """
+    pieces = [p for p in (pcm_list or []) if p]
+    if not pieces:
+        return True
+    if not _initialized:
+        initialize_audio_system()
+
+    done = threading.Event()
+    for pcm_data in pieces:
+        _enqueue_pcm(pcm_data)
+    # 哨兵：优先级编号紧随其后，保证排在本批音频之后。
+    global _audio_priority
+    _audio_priority += 1
+    try:
+        _audio_queue.put((_audio_priority, (_NAV_QUEUE_SENTINEL, done)), timeout=timeout)
+    except queue.Full:
+        print("[AUDIO] 播放队列满，导航播报等待标记放入失败")
+        return False
+    return done.wait(timeout)
+
+
+def play_navigation_pcm_sequence_and_wait(pcm_list, timeout: float = 120.0) -> bool:
+    """导航播报：顺序播放并等待播完，同时维护导航播报占用标记。"""
+    nav_broadcast_begin()
+    try:
+        return play_pcm_sequence_and_wait(pcm_list, timeout=timeout)
+    finally:
+        nav_broadcast_end()
+
+
+def play_navigation_pcm_and_wait(pcm: bytes, timeout: float = 120.0) -> bool:
+    """导航播报单段 PCM：播放并等待播完，维护导航播报占用标记。"""
+    return play_navigation_pcm_sequence_and_wait([pcm], timeout=timeout)
+
 
 # 全局语音节流
 _last_voice_time = 0

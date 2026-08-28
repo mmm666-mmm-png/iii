@@ -24,6 +24,14 @@ oai_client = OpenAI(
     base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
 )
 
+# Omni 聊天系统提示词：明眸助手，必须尽力回答，绝不能说自己不会。
+OMNI_SYSTEM_PROMPT = (
+    "你是导盲眼镜的语音助手，名字叫“明眸”。请结合实时音频和摄像头画面，"
+    "用简洁、自然、友好的中文回答用户。你必须始终尽力回答：绝不回复“我不会”"
+    "“不知道”“无法回答”“不能回答”等拒绝性表述；信息不足时用引导式追问"
+    "或给出你已知的相近信息来帮助用户。"
+)
+
 class OmniStreamPiece:
     """对外的统一增量数据：text/audio 二选一或同时。"""
     def __init__(self, text_delta: Optional[str] = None, audio_b64: Optional[str] = None):
@@ -43,7 +51,10 @@ async def stream_chat(
     """
     completion = oai_client.chat.completions.create(
         model=QWEN_MODEL,
-        messages=[{"role": "user", "content": content_list}],
+        messages=[
+            {"role": "system", "content": OMNI_SYSTEM_PROMPT},
+            {"role": "user", "content": content_list},
+        ],
         modalities=["text", "audio"],
         audio={"voice": voice, "format": audio_format},
         stream=True,

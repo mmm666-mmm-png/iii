@@ -11,6 +11,7 @@
 """
 import os
 import time
+import threading
 import cv2
 import numpy as np
 import logging
@@ -249,7 +250,19 @@ class BlindPathNavigator:
         self.last_obstacle_speech = ""
         self.last_obstacle_speech_time = 0
         self.obstacle_speech_cooldown = 5.0  # 相同障碍物3秒内不重复播报
-        
+
+        # 【新增】人行道两轮车（共享电动车/自行车/家用电动车）检测
+        self.EBIKE_ENABLED = os.getenv("AIGLASS_EBIKE_ENABLED", "0") == "1"  # 默认关闭：YOLOE 太重，训练好轻量模型再开
+        self.EBIKE_CHECK_INTERVAL = int(os.getenv("AIGLASS_EBIKE_INTERVAL", "30"))  # 每N帧检测一次
+        self.ebike_detector = None          # 懒加载；False 表示加载失败不再重试
+        self.last_ebike_frame = -self.EBIKE_CHECK_INTERVAL
+        self.last_ebike_objs: List[Dict[str, Any]] = []
+        self.pending_ebike_voice = None
+        self.last_ebike_speech = ""
+        self.last_ebike_speech_time = 0
+        self.ebike_speech_cooldown = float(os.getenv("AIGLASS_EBIKE_COOLDOWN", "8.0"))
+        self._ebike_detecting = False
+
         # 掩码稳定化参数（已禁用光流外推，这些参数不再使用）
         self.MASK_STAB_MIN_AREA = int(os.getenv("AIGLASS_MASK_MIN_AREA", "1500"))
         self.MASK_STAB_KERNEL = int(os.getenv("AIGLASS_MASK_MORPH", "3"))
@@ -487,6 +500,9 @@ class BlindPathNavigator:
         
         # 【新增】检查近距离障碍物并设置语音
         self._check_and_set_obstacle_voice(detected_obstacles)
+
+        # 【新增】人行道两轮车检测（共享电动车/自行车/家用电动车）：节流检测+画框+语音避让
+        self._check_and_set_ebike_voice(image, frame_visualizations)
         
         # 3. 斑马线感知处理。NavigationMaster 会读取 crosswalk_stage 来决定是否切换过马路流程。
         # 先检查 crosswalk_mask 状态，日志用于现场调参。
@@ -680,6 +696,15 @@ class BlindPathNavigator:
                     'source': 'crosswalk'
                 })
                 self.pending_crosswalk_voice = None  # 清除已处理的斑马线语音
+
+        # 【新增】人行道两轮车语音（最高优先级，与障碍物同级）
+        if hasattr(self, 'pending_ebike_voice') and self.pending_ebike_voice:
+            voice_candidates.append({
+                'text': self.pending_ebike_voice,
+                'priority': 100,
+                'source': 'ebike'
+            })
+            self.pending_ebike_voice = None  # 清除已处理的两轮车语音
         
         # 3. 选择优先级最高的语音
         if voice_candidates:
@@ -743,8 +768,8 @@ class BlindPathNavigator:
                         self.last_any_speech_time = current_time
                     else:
                         final_guidance_text = ""
-            elif final_guidance_text and selected_voice['source'] == 'obstacle':
-                # 障碍物语音总是播报
+            elif final_guidance_text and selected_voice['source'] in ('obstacle', 'ebike'):
+                # 障碍物/两轮车语音总是播报
                 self.last_any_speech_time = current_time
             elif final_guidance_text and selected_voice['source'] == 'crosswalk':
                 # 斑马线语音总是播报（不受重复检查限制）
@@ -1940,6 +1965,110 @@ class BlindPathNavigator:
         idx = np.abs(ys - y_target).argmin()
         return ws[idx]
     
+    # ==================== 人行道两轮车检测（共享电动车/自行车/家用电动车） ====================
+    def _get_ebike_detector(self):
+        """懒加载两轮车检测器（复用 ebike_detector.EbikeDetector）。"""
+        if self.ebike_detector is not None:
+            return self.ebike_detector if self.ebike_detector is not False else None
+        try:
+            from ebike_detector import EbikeDetector
+
+            self.ebike_detector = EbikeDetector()
+            logger.info("[EBIKE] 两轮车检测器已加载")
+        except Exception as exc:  # noqa: BLE001
+            logger.error("[EBIKE] 两轮车检测器加载失败: %s", exc)
+            self.ebike_detector = False
+        return self.ebike_detector if self.ebike_detector is not False else None
+
+    def _check_and_set_ebike_voice(self, image, frame_visualizations):
+        """节流检测人行道两轮车：画框（用最近缓存）+ 后台线程检测，不阻塞事件循环。"""
+        if not self.EBIKE_ENABLED:
+            return
+        # 用最近一次检测结果持续画框（检测在后台线程，结果约有帧间隔延迟）
+        for obj in self.last_ebike_objs:
+            self._add_ebike_visualization(obj, frame_visualizations)
+        # 节流：到达检测帧才后台异步检测；上一个检测未完成则跳过
+        if self.frame_counter - self.last_ebike_frame < self.EBIKE_CHECK_INTERVAL:
+            return
+        if self._ebike_detecting:
+            return
+        self.last_ebike_frame = self.frame_counter
+        self._ebike_detecting = True
+        try:
+            threading.Thread(
+                target=self._ebike_detect_worker, args=(image.copy(),), daemon=True
+            ).start()
+        except Exception as exc:  # noqa: BLE001
+            logger.error("[EBIKE] 启动检测线程失败: %s", exc)
+            self._ebike_detecting = False
+
+    def _ebike_detect_worker(self, image):
+        """后台线程：加载检测器并执行检测，结果写入缓存/待播报语音（不阻塞主线程）。"""
+        try:
+            det = self._get_ebike_detector()
+            if det is None:
+                return
+            objs = det.detect(image)
+            self.last_ebike_objs = objs
+
+            # 仅近距离两轮车才播报避让提示
+            near = [o for o in objs if self._is_ebike_near(o, image.shape)]
+            if not near:
+                self.last_ebike_speech = ""
+                self.pending_ebike_voice = None
+                return
+            main_obj = max(near, key=lambda o: (o["box"][2] - o["box"][0]) * (o["box"][3] - o["box"][1]))
+            label = main_obj.get("label_cn") or main_obj.get("class") or "车辆"
+            now = time.time()
+            should = False
+            if label != self.last_ebike_speech:
+                should = True
+                self.last_ebike_speech = label
+                self.last_ebike_speech_time = now
+            elif now - self.last_ebike_speech_time > self.ebike_speech_cooldown:
+                should = True
+                self.last_ebike_speech_time = now
+            if should:
+                direction = "前方"
+                cx = (main_obj["box"][0] + main_obj["box"][2]) / 2
+                if cx < image.shape[1] * 0.33:
+                    direction = "左前方"
+                elif cx > image.shape[1] * 0.66:
+                    direction = "右前方"
+                self.pending_ebike_voice = f"{direction}有{label}，注意避让"
+                logger.info("[EBIKE] 待播报: %s", self.pending_ebike_voice)
+        except Exception as exc:  # noqa: BLE001
+            logger.error("[EBIKE] 两轮车检测异常: %s", exc)
+        finally:
+            self._ebike_detecting = False
+
+    @staticmethod
+    def _is_ebike_near(obj, shape) -> bool:
+        """两轮车是否算“近距离”（画面靠下或占比较大）。"""
+        H, W = shape[:2]
+        x1, y1, x2, y2 = obj.get("box", [0, 0, 0, 0])
+        w = max(0, x2 - x1)
+        h = max(0, y2 - y1)
+        area_ratio = (w * h) / max(1, H * W)
+        bottom_y = y2 / max(1, H)
+        return bottom_y > 0.65 or area_ratio > 0.06
+
+    @staticmethod
+    def _add_ebike_visualization(obj, visualizations):
+        """给两轮车画橙色边界框标注（区别于障碍物红色/黄色）。"""
+        try:
+            x1, y1, x2, y2 = (int(v) for v in obj.get("box", [0, 0, 0, 0]))
+            if x2 <= x1 or y2 <= y1:
+                return
+            visualizations.append({
+                "type": "outline",
+                "points": [[x1, y1], [x2, y1], [x2, y2], [x1, y2]],
+                "color": "rgba(255, 128, 0, 0.95)",  # 橙色框
+                "thickness": 3,
+            })
+        except Exception as exc:  # noqa: BLE001
+            logger.error("[EBIKE] 可视化失败: %s", exc)
+
     def _detect_obstacles(self, image, path_mask=None):
         """检测障碍物"""
         logger.info(f"[_detect_obstacles] 开始执行，Frame={self.frame_counter}, obstacle_detector={'已加载' if self.obstacle_detector else '未加载'}")

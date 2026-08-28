@@ -272,9 +272,7 @@ async function refreshStatus(options = {}) {
     liveState.value = state
     if (state?.ai) {
       aiState.value = state.ai
-      if (state.ai.voiceMode === 'chat' || state.ai.voiceMode === 'navigation') {
-        voiceMode.value = state.ai.voiceMode
-      }
+      applyVoiceMode(state.ai.voiceMode)
     }
     if (state?.vision) {
       liveVisionState.value = state.vision
@@ -318,9 +316,7 @@ async function setAssistantMode(mode, options = {}) {
     if (body.ai) {
       aiState.value = body.ai
     }
-    if (body.ai?.voiceMode === 'chat' || body.ai?.voiceMode === 'navigation') {
-      voiceMode.value = body.ai.voiceMode
-    }
+    applyVoiceMode(body.ai?.voiceMode)
     return true
   } catch (error) {
     if (!options.silent) {
@@ -378,7 +374,8 @@ async function switchWorkMode(mode) {
   window.localStorage.setItem('ai-glass-work-mode', mode)
 
   if (mode === 'navigation') {
-    await setAssistantMode('qa', { silent: true })
+    // 导盲模式下语音交互必须处于高德导航，且千问静默。
+    await setAssistantMode('navigation', { silent: true })
     const ok = await sendVisionCommand({ command: 'start_blind_navigation' }, { syncMode: false })
     if (!ok) {
       activeWorkMode.value = previousMode
@@ -443,6 +440,16 @@ function syncWorkModeFromState({ ai = null, vision = null } = {}) {
   }
 }
 
+function applyVoiceMode(mode) {
+  // 语音模式（chat=千问聊天 / navigation=高德导航）同时驱动前端工作模式：
+  // 高德导航 → 导盲/障碍物管理(navigation)；千问聊天 → 问答(qa)。
+  if (mode !== 'chat' && mode !== 'navigation') return
+  voiceMode.value = mode
+  const workMode = mode === 'navigation' ? 'navigation' : 'qa'
+  activeWorkMode.value = workMode
+  window.localStorage.setItem('ai-glass-work-mode', workMode)
+}
+
 function viewerWsUrl() {
   // HTTP/HTTPS 自动映射为 WS/WSS，支持反向代理部署。
   const base = backendHttpBase || window.location.origin
@@ -481,9 +488,7 @@ function connectLiveSocket() {
       liveState.value = payload
       if (payload.ai) {
         aiState.value = payload.ai
-        if (payload.ai.voiceMode === 'chat' || payload.ai.voiceMode === 'navigation') {
-          voiceMode.value = payload.ai.voiceMode
-        }
+        applyVoiceMode(payload.ai.voiceMode)
       }
       if (payload.vision) {
         liveVisionState.value = payload.vision
@@ -494,9 +499,7 @@ function connectLiveSocket() {
     }
     if (payload?.type === 'ai_state') {
       aiState.value = payload
-      if (payload.voiceMode === 'chat' || payload.voiceMode === 'navigation') {
-        voiceMode.value = payload.voiceMode
-      }
+      applyVoiceMode(payload.voiceMode)
       syncWorkModeFromState({ ai: payload })
       return
     }

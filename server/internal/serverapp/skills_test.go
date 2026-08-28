@@ -97,6 +97,45 @@ func TestSkillIntentNoMatch(t *testing.T) {
 	}
 }
 
+func TestWakeWordTranscript(t *testing.T) {
+	wakes := []string{
+		"明眸",
+		"明眸你好",
+		"明眸，今天天气怎么样",
+		"明某",
+		"名眸",
+		"明谋",
+		"名模",
+		"明磨",
+		"铭眸",
+		"mingmou",
+		"ming mou",
+		"míng móu",
+	}
+	for _, text := range wakes {
+		if !isWakeWordTranscript(text) {
+			t.Errorf("isWakeWordTranscript(%q) = false, want true", text)
+		}
+	}
+
+	nonWakes := []string{"导航到东湖公园", "开始盲道导航", "今天天气怎么样", "帮我看一下"}
+	for _, text := range nonWakes {
+		if isWakeWordTranscript(text) {
+			t.Errorf("isWakeWordTranscript(%q) = true, want false", text)
+		}
+	}
+}
+
+func TestWakeWordSwitchesToChat(t *testing.T) {
+	registry := &skillRegistry{}
+	for _, text := range []string{"明眸", "明某", "mingmou", "明眸你好"} {
+		intent, ok := registry.matchIntent(text)
+		if !ok || intent.Name != "switch_to_chat" {
+			t.Errorf("matchIntent(%q) = (%q, %v), want switch_to_chat", text, intent.Name, ok)
+		}
+	}
+}
+
 func TestLocalWeatherLocation(t *testing.T) {
 	tests := []struct {
 		name string

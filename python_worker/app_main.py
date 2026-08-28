@@ -158,6 +158,7 @@ from asr_core import (
 )
 from audio_player import initialize_audio_system, play_voice_text
 from interfaces.api.route_endpoints import router as navigation_router
+from interfaces.api.ebike_endpoints import router as ebike_router
 
 # ---- 同步录制器 ----
 import sync_recorder
@@ -177,6 +178,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 app.include_router(navigation_router)
+app.include_router(ebike_router)
 
 # ====== 状态与容器 ======
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -956,6 +958,11 @@ async def start_ai_with_text(user_text: str):
             # 【修改】标记omni对话结束，恢复之前的导航模式
             global omni_conversation_active, omni_previous_nav_state
             omni_conversation_active = False
+
+            # 记录整段播报结束时刻：结束后再延后 3 秒才恢复语音识别，
+            # 避免播报回声被麦克风拾取后立即触发新一轮（自问自答）。
+            from audio_stream import stream_clients, mark_ai_play_end  # 局部导入，避免环依赖
+            mark_ai_play_end()
             
             # 恢复之前的导航状态
             if orchestrator and omni_previous_nav_state:
@@ -966,7 +973,6 @@ async def start_ai_with_text(user_text: str):
                 print(f"[OMNI] 对话结束（无需恢复导航状态）")
             
             # 自然结束时，给当前连接一个 "完结" 信号
-            from audio_stream import stream_clients  # 局部导入，避免环依赖
             for sc in list(stream_clients):
                 if not sc.abort_event.is_set():
                     try: sc.q.put_nowait(b"\x00"*BYTES_PER_20MS_16K)  # 一帧静音

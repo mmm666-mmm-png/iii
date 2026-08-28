@@ -105,7 +105,9 @@ constexpr uint16_t kAudioActivationAverage = 18;
 constexpr uint16_t kAudioOutputFloor = 24;
 constexpr uint16_t kAudioTargetPeak = 15000;
 constexpr uint16_t kAudioMinGainQ8 = 256;
-constexpr uint16_t kAudioMaxGainQ8 = 5 * 256;
+// 最大增益从 5 倍降至 2 倍：避免扬声器播报回声被过分放大，
+// 减少噪声/回声导致 ASR 误识别成用户语音。
+constexpr uint16_t kAudioMaxGainQ8 = 2 * 256;
 constexpr uint16_t kAudioLimiterThreshold = 22000;
 constexpr uint8_t kAudioAgcAttackShift = 3;
 constexpr uint8_t kAudioAgcReleaseShift = 5;

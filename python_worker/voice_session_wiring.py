@@ -49,6 +49,13 @@ logger = logging.getLogger(__name__)
 
 GO_BACKEND_URL = os.getenv("GO_BACKEND_URL", "http://127.0.0.1:8888").rstrip("/")
 
+# 千问聊天系统提示词：明眸助手，必须尽力回答，绝不能说自己不会。
+QWEN_CHAT_SYSTEM_PROMPT = (
+    "你是导盲眼镜的语音助手，名字叫“明眸”。请用简洁、自然、友好的中文回答用户。"
+    "你必须始终尽力回答：绝不回复“我不会”“不知道”“无法回答”“不能回答”等拒绝性表述；"
+    "信息不足时用引导式追问或给出你已知的相近信息来帮助用户。"
+)
+
 
 # ==================== 底层实现 ====================
 async def _synthesize_pcm16_8k(text: str) -> bytes:
@@ -126,7 +133,10 @@ async def _qwen_chat_reply(text: str) -> str:
             )
             resp = client.chat.completions.create(
                 model=os.getenv("QWEN_MODEL", "qwen-turbo"),
-                messages=[{"role": "user", "content": text}],
+                messages=[
+                    {"role": "system", "content": QWEN_CHAT_SYSTEM_PROMPT},
+                    {"role": "user", "content": text},
+                ],
                 stream=False,
             )
             return (resp.choices[0].message.content or "").strip()
@@ -138,6 +148,17 @@ async def _qwen_chat_reply(text: str) -> str:
 
 
 # ==================== 导航底层（复用现有规划 + GPS 触发） ====================
+def _start_blind_path_navigation_if_available() -> None:
+    """best-effort 启动视觉导盲（orchestrator 切 BLINDPATH_NAV），失败不影响高德导航。"""
+    try:
+        import app_main
+
+        if app_main.orchestrator is not None:
+            app_main.orchestrator.start_blind_path_navigation()
+    except Exception as exc:  # noqa: BLE001
+        logger.debug("启动视觉导盲失败: %s", exc)
+
+
 def _plan_and_start_nav_sync(destination: str) -> str:
     """规划导航并注册到 GPS 触发器，返回路线摘要播报文本（在线程中执行）。"""
     from application.voice_interaction_service import VoiceInteractionService
@@ -163,14 +184,16 @@ def _plan_and_start_nav_sync(destination: str) -> str:
 
     # 注册到 GPS 触发器：手机定位进入下一路段时自动播报。
     get_gps_trigger().set_route(result.segments)
+    # 高德导航同时开启视觉导盲模式（盲道跟随）
+    _start_blind_path_navigation_if_available()
     text = result.broadcast_text or info.get("response_text", "")
     if text:
         _announce_navigation_voice(text)
     return text
 
 
-async def _amap_start_nav(destination: str) -> None:
-    await asyncio.to_thread(_plan_and_start_nav_sync, destination)
+async def _amap_start_nav(destination: str) -> Optional[str]:
+    return await asyncio.to_thread(_plan_and_start_nav_sync, destination)
 
 
 async def _amap_stop_nav() -> None:
@@ -205,6 +228,16 @@ async def _vad_is_speech() -> bool:
     return False
 
 
+def _nav_audio_active() -> bool:
+    """当前是否有导航语音正在排队/播放（聊天播报据此让路）。"""
+    try:
+        from audio_player import is_navigation_audio_active
+
+        return is_navigation_audio_active()
+    except Exception:  # noqa: BLE001
+        return False
+
+
 # ==================== 工厂 ====================
 def build_voice_session_manager(
     overrides: Optional[Dict[str, Any]] = None,
@@ -224,6 +257,7 @@ def build_voice_session_manager(
         "amap_resume_broadcast": _amap_resume_broadcast,
         "amap_next_step": _amap_next_step,
         "vad_is_speech": _vad_is_speech,
+        "nav_audio_active": _nav_audio_active,
     }
     if overrides:
         deps.update(overrides)

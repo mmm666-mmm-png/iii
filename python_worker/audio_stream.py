@@ -7,6 +7,8 @@ Qwen Omni 或预录语音都会先变成 8kHz PCM16，然后通过 broadcast_pcm
 按 20ms 节拍写入当前 /stream.wav 连接。hard_reset_audio 是总闸，用于打断旧音频。
 """
 import asyncio
+import os
+import time
 from dataclasses import dataclass
 from typing import Optional, Set, List, Tuple, Any, Dict
 from fastapi import Request
@@ -22,6 +24,18 @@ BYTES_PER_20MS_16K = STREAM_SR * STREAM_SW * 20 // 1000  # 320B (8kHz)
 # ===== AI 播放任务总闸 =====
 current_ai_task: Optional[asyncio.Task] = None
 
+# 整段播报结束后的语音识别延后：播报结束后再延后 POST_PLAY_GRACE_SECONDS 秒
+# 才放行 ASR 结果触发新一轮，避免扬声器播报回声被麦克风拾取后又被识别成输入
+# （自问自答）。默认 3 秒，可用环境变量 AIGLASS_POST_BROADCAST_DELAY_SECONDS 覆盖。
+POST_PLAY_GRACE_SECONDS = float(os.getenv("AIGLASS_POST_BROADCAST_DELAY_SECONDS", "3.0"))
+_last_ai_play_end_ts = 0.0  # 最近一次 AI 播报结束时刻（monotonic）
+
+
+def mark_ai_play_end() -> None:
+    """记录一次 AI 播报结束时刻，供 is_playing_now 判断延后期。"""
+    global _last_ai_play_end_ts
+    _last_ai_play_end_ts = time.monotonic()
+
 async def cancel_current_ai():
     """取消当前大模型语音任务，并等待其退出。"""
     global current_ai_task
@@ -35,11 +49,16 @@ async def cancel_current_ai():
             pass
         except Exception:
             pass
+    # 播报被中断也视为一次播报结束，进入延后期
+    mark_ai_play_end()
 
 def is_playing_now() -> bool:
-    """判断普通 AI 问答任务是否仍在产出音频/文本。"""
+    """判断普通 AI 问答任务是否仍在产出音频/文本（含播报结束后的延后期）。"""
     t = current_ai_task
-    return (t is not None) and (not t.done())
+    if (t is not None) and (not t.done()):
+        return True
+    # 播报刚结束：延后 POST_PLAY_GRACE_SECONDS 秒再放行语音识别
+    return (time.monotonic() - _last_ai_play_end_ts) < POST_PLAY_GRACE_SECONDS
 
 # ===== /stream.wav 连接管理 =====
 @dataclass(frozen=True)

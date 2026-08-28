@@ -11,7 +11,7 @@ from typing import Dict, Optional
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
-from audio_player import play_pcm_bytes, play_voice_text
+from audio_player import play_navigation_pcm_and_wait, play_voice_text
 from application.dtos.route_dtos import RoutePlanningRequest, VoiceCommandRequest
 from application.route_broadcast_service import RouteBroadcastService
 from application.route_planning_service import RoutePlanningService
@@ -392,7 +392,7 @@ def _announce_navigation_voice(text: str) -> None:
         try:
             pcm = TtsClient().synthesize_pcm16_8k(message)
             if pcm:
-                play_pcm_bytes(pcm)
+                play_navigation_pcm_and_wait(pcm)
                 return
         except Exception:
             logger.debug("navigation voice TTS failed, fallback to static wav", exc_info=True)
