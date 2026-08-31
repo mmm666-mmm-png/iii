@@ -107,10 +107,8 @@ class RoutePlanningService:
             f"障碍密度={best_route.obstacle_density:.1f}/km"
         )
 
-        # 5. 生成语音播报（统一使用中文，不再生成英文播报）
-        broadcast_text = self.voice_client.generate_route_broadcast(
-            best_route, ranked_routes, domain_request
-        )
+        # 5. 生成语音播报（固定演示文案，不再依赖大模型动态生成）
+        broadcast_text = "检测到您摔倒，马上为您拨打号码联系紧急联系人，请等待救援。"
 
         # 5.1 生成逐段路线播报（高德每一步导航指令）
         turn_by_turn = RouteBroadcastService.build_turn_by_turn(best_route)

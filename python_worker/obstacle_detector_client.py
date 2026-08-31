@@ -13,12 +13,15 @@ import numpy as np
 import torch
 from threading import Semaphore
 from contextlib import contextmanager
-from ultralytics import YOLOE
+from ultralytics import YOLO, YOLOE
 from typing import List, Dict, Any, Optional
 
 logger = logging.getLogger(__name__)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DEFAULT_MODEL_PATH = os.path.join(BASE_DIR, "..", "AIGlasses_for_navigation", "yoloe-11l-seg.pt")
+DEFAULT_MODEL_PATH = os.getenv(
+    "AIGLASS_OBS_MODEL",
+    os.path.join(BASE_DIR, "..", "AIGlasses_for_navigation", "block.pt"),
+)
 
 # --- GPU/CPU & AMP 配置：所有视觉模型尽量共享同一设备策略 ---
 DEVICE = os.getenv("AIGLASS_DEVICE", "cuda:0")
@@ -60,32 +63,48 @@ class ObstacleDetectorClient:
     def __init__(self, model_path: Optional[str] = None):
         self.model = None
         self.whitelist_embeddings = None
+        self.model_type = "yoloe"  # yoloe=开放词汇分割(默认) | yolo=普通检测(如 block.pt)
         model_path = model_path or DEFAULT_MODEL_PATH
-        self.WHITELIST_CLASSES = [
-            # 常见动态障碍物 + 静态杆状/路面障碍物。白名单越窄，YOLOE 越稳定。
-            'bicycle', 'car', 'motorcycle', 'bus', 'truck', 'animal', 'scooter', 'stroller', 'dog',
-            'pole', 'post', 'column', 'pillar', 'stanchion', 'bollard', 'utility pole',
-            'telegraph pole', 'light pole', 'street pole', 'signpost', 'support post',
-            'vertical post', 'bench', 'chair', 'potted plant', 'hydrant', 'cone', 'stone', 'box'
-        ]
+        if "yoloe" not in os.path.basename(model_path).lower():
+            self.model_type = "yolo"
+
         try:
             if not os.path.exists(model_path):
-                raise FileNotFoundError(f"YOLOE model not found: {model_path}")
-            logger.info("正在加载 YOLOE 障碍物模型...")
-            self.model = YOLOE(model_path)
-            self.model.to(DEVICE)
-            self.model.fuse()
-            logger.info(f"YOLOE 障碍物模型加载成功，使用设备: {DEVICE}")
+                raise FileNotFoundError(f"障碍物模型不存在: {model_path}")
 
-            logger.info("正在为 YOLOE 预计算白名单文本特征...")
-            if IS_CUDA and AMP_DTYPE is not None:
-                with torch.inference_mode(), torch.amp.autocast(device_type='cuda', dtype=AMP_DTYPE):
-                    self.whitelist_embeddings = self.model.get_text_pe(self.WHITELIST_CLASSES)
+            if self.model_type == "yolo":
+                # 普通 YOLO 检测模型（如 block.pt），类别固定，无需文本提示词
+                logger.info("正在加载 YOLO 障碍物检测模型: %s", model_path)
+                self.model = YOLO(model_path)
+                self.model.to(DEVICE)
+                self.model.fuse()
+                names = getattr(self.model, "names", {}) or {}
+                self.WHITELIST_CLASSES = [str(v) for v in names.values()]
+                logger.info("YOLO 障碍物检测模型加载成功，设备: %s，类别: %s", DEVICE, self.WHITELIST_CLASSES)
             else:
-                self.whitelist_embeddings = self.model.get_text_pe(self.WHITELIST_CLASSES)
-            logger.info("YOLOE 特征预计算完成。")
+                # 原 YOLOE 开放词汇分割逻辑
+                self.WHITELIST_CLASSES = [
+                    # 常见动态障碍物 + 静态杆状/路面障碍物。白名单越窄，YOLOE 越稳定。
+                    'bicycle', 'car', 'motorcycle', 'bus', 'truck', 'animal', 'scooter', 'stroller', 'dog',
+                    'pole', 'post', 'column', 'pillar', 'stanchion', 'bollard', 'utility pole',
+                    'telegraph pole', 'light pole', 'street pole', 'signpost', 'support post',
+                    'vertical post', 'bench', 'chair', 'potted plant', 'hydrant', 'cone', 'stone', 'box'
+                ]
+                logger.info("正在加载 YOLOE 障碍物模型...")
+                self.model = YOLOE(model_path)
+                self.model.to(DEVICE)
+                self.model.fuse()
+                logger.info(f"YOLOE 障碍物模型加载成功，使用设备: {DEVICE}")
+
+                logger.info("正在为 YOLOE 预计算白名单文本特征...")
+                if IS_CUDA and AMP_DTYPE is not None:
+                    with torch.inference_mode(), torch.amp.autocast(device_type='cuda', dtype=AMP_DTYPE):
+                        self.whitelist_embeddings = self.model.get_text_pe(self.WHITELIST_CLASSES)
+                else:
+                    self.whitelist_embeddings = self.model.get_text_pe(self.WHITELIST_CLASSES)
+                logger.info("YOLOE 特征预计算完成。")
         except Exception as e:
-            logger.error(f"YOLOE 模型加载或特征计算失败: {e}", exc_info=True)
+            logger.error(f"障碍物模型加载或特征计算失败: {e}", exc_info=True)
             raise
     def tensor_to_numpy_mask(mask_tensor):
         """安全地将各种 dtype 的 torch 掩码转换为 uint8 numpy 二值掩码。"""
@@ -111,6 +130,9 @@ class ObstacleDetectorClient:
         """
         if self.model is None:
             return []
+
+        if self.model_type == "yolo":
+            return self._detect_yolo(image, path_mask)
 
         H, W = image.shape[:2]
         try:
@@ -187,6 +209,63 @@ class ObstacleDetectorClient:
                 'center_x': np.mean(x_coords),
                 'center_y': np.mean(y_coords),
                 'bottom_y_ratio': np.max(y_coords) / H
+            })
+
+        return final_obstacles
+
+    def _detect_yolo(self, image: np.ndarray, path_mask: np.ndarray = None) -> List[Dict[str, Any]]:
+        """普通 YOLO 检测分支（如 block.pt）：由检测框生成等价掩码，返回与 YOLOE 分支一致的格式。"""
+        H, W = image.shape[:2]
+        conf_thr = float(os.getenv("AIGLASS_OBS_CONF", "0.25"))
+        with gpu_infer_slot():
+            results = self.model.predict(image, verbose=False, conf=conf_thr)
+
+        final_obstacles: List[Dict[str, Any]] = []
+        if not results or results[0].boxes is None or len(results[0].boxes) == 0:
+            return final_obstacles
+
+        b = results[0].boxes
+        xyxy = b.xyxy.cpu().numpy()
+        cls_ids = b.cls.cpu().tolist()
+        confs = b.conf.cpu().tolist()
+        names_map = getattr(results[0], "names", {}) or {}
+
+        for i in range(len(xyxy)):
+            x1, y1, x2, y2 = (float(v) for v in xyxy[i])
+            x1, y1 = max(0.0, x1), max(0.0, y1)
+            x2, y2 = min(float(W), x2), min(float(H), y2)
+            if x2 - x1 < 2 or y2 - y1 < 2:
+                continue
+            cls_id = int(cls_ids[i])
+            if isinstance(names_map, dict):
+                class_name = str(names_map.get(cls_id, "Unknown"))
+            elif isinstance(names_map, list) and 0 <= cls_id < len(names_map):
+                class_name = str(names_map[cls_id])
+            else:
+                class_name = "Unknown"
+
+            # 由检测框生成矩形掩码，供后续可视化 / 路径过滤复用
+            mask = np.zeros((H, W), dtype=np.uint8)
+            mask[int(y1):int(y2), int(x1):int(x2)] = 255
+            area = float((x2 - x1) * (y2 - y1))
+            area_ratio = area / (H * W)
+            if area_ratio > 0.7:
+                continue
+
+            if path_mask is not None:
+                intersection_area = float(np.sum(cv2.bitwise_and(mask, path_mask) > 0))
+                if intersection_area < 100 or (intersection_area / max(area, 1.0)) < 0.01:
+                    continue
+
+            final_obstacles.append({
+                'name': class_name.strip(),
+                'confidence': float(confs[i]),
+                'mask': mask,
+                'area': area,
+                'area_ratio': area_ratio,
+                'center_x': (x1 + x2) / 2.0,
+                'center_y': (y1 + y2) / 2.0,
+                'bottom_y_ratio': y2 / H,
             })
 
         return final_obstacles

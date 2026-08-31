@@ -255,7 +255,7 @@ class CrossStreetNavigator:
         if self.obstacle_detector is None and os.getenv("AIGLASS_OBS_AUTO", "1") != "0":
             try:
                 if ObstacleDetectorClient is not None:
-                    model_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "AIGlasses_for_navigation", "yoloe-11l-seg.pt")
+                    model_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "AIGlasses_for_navigation", os.getenv("AIGLASS_OBS_MODEL", "block.pt"))
                     self.obstacle_detector = ObstacleDetectorClient(model_path)
                     logger.info("[CROSS_STREET] 障碍物检测器已自动加载")
                 else:
@@ -1687,6 +1687,8 @@ class CrossStreetNavigator:
                         NEAR_Y = 0.7
                         NEAR_AREA = 0.1
                         near_list = [o for o in detected_obstacles if (o.get('bottom_y_ratio', 0) > NEAR_Y or o.get('area_ratio', 0) > NEAR_AREA)]
+                        # 【新增】排除 person（人）：识别到人时不播报
+                        near_list = [o for o in near_list if str(o.get('name', '')).strip().lower() != 'person']
                         if near_list:
                             name = (near_list[0].get('name') or '障碍物')
                             obstacle_override = self._speech_for_obstacle(name)

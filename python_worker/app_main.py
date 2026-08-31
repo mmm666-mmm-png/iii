@@ -79,7 +79,7 @@ def encode_frame_jpeg(bgr, quality=80):
     """把 OpenCV BGR 图像编码成 JPEG ndarray。"""
     return cv2.imencode(".jpg", bgr, [int(cv2.IMWRITE_JPEG_QUALITY), quality])
 
-def encode_frame_jpeg_bytes(bgr, quality=80):
+def encode_frame_jpeg_bytes(bgr, quality=90):
     """把 BGR 图像编码成 JPEG bytes；失败返回空 bytes。"""
     ok, enc = encode_frame_jpeg(bgr, quality)
     return enc.tobytes() if ok else b""
@@ -319,7 +319,7 @@ def load_navigation_models():
             print(f"[NAVIGATION] 请检查文件路径是否正确")
             
         # 【修改开始】使用 ObstacleDetectorClient 替代直接的 YOLO
-        obstacle_model_path = local_path("..", "AIGlasses_for_navigation", "yoloe-11l-seg.pt")
+        obstacle_model_path = local_path("..", "AIGlasses_for_navigation", os.getenv("AIGLASS_OBS_MODEL", "block.pt"))
         print(f"[NAVIGATION] 尝试加载障碍物检测模型: {obstacle_model_path}")
         
         if os.path.exists(obstacle_model_path):
@@ -1122,7 +1122,7 @@ async def vision_process(request: Request):
                 out_img = res.annotated_image if res.annotated_image is not None else bgr
                 guidance_text = res.guidance_text or ""
 
-            ok_enc, enc = cv2.imencode(".jpg", out_img, [int(cv2.IMWRITE_JPEG_QUALITY), 80])
+            ok_enc, enc = cv2.imencode(".jpg", out_img, [int(cv2.IMWRITE_JPEG_QUALITY), 92])
             image_b64 = base64.b64encode(enc.tobytes()).decode("ascii") if ok_enc else ""
             _set_vision_result(
                 ready=True,
@@ -1455,7 +1455,7 @@ async def ws_camera_esp(ws: WebSocket):
 
                     # 广播图像
                     if camera_viewers and out_img is not None:
-                        ok, enc = cv2.imencode(".jpg", out_img, [int(cv2.IMWRITE_JPEG_QUALITY), 80])
+                        ok, enc = cv2.imencode(".jpg", out_img, [int(cv2.IMWRITE_JPEG_QUALITY), 92])
                         if ok:
                             jpeg_data = enc.tobytes()
                             dead = []

@@ -20,7 +20,6 @@ from dataclasses import dataclass
 from collections import deque
 import torch  # 添加这行
 from obstacle_detector_client import ObstacleDetectorClient
-from audio_player import play_voice_text  # 新增
 from crosswalk_awareness import CrosswalkAwarenessMonitor, split_combined_voice  # 斑马线感知
 # 尝试导入 Pillow，用于中文显示
 try:
@@ -71,6 +70,9 @@ _OBSTACLE_NAME_CN = {
     'scooter': '电瓶车',
     'stroller': '婴儿车',
     'dog': '狗',
+    'cone': '锥桶',
+    'spherical_roadblock': '球形路障',
+    'tricycle': '三轮车',
 }
 
 # 动态类别名称列表
@@ -475,7 +477,7 @@ class BlindPathNavigator:
         
         # 使用缓存策略，但确保所有障碍物都被可视化
         if self.frame_counter % self.OBSTACLE_DETECTION_INTERVAL == 0:
-            detected_obstacles = self._detect_obstacles(image, blind_path_mask)
+            detected_obstacles = self._detect_obstacles(image)
             self.last_detected_obstacles = detected_obstacles
             self.last_obstacle_detection_frame = self.frame_counter
             if self.obstacle_reporter:
@@ -775,22 +777,16 @@ class BlindPathNavigator:
                 # 斑马线语音总是播报（不受重复检查限制）
                 self.last_any_speech_time = current_time
                 
-            # 播报选中的语音
+            # 语音统一由上层（NavigationMaster → app_main → Go/设备）负责播报：
+            # 这里只决定本帧要返回的 guidance_text，避免与上层重复播报。
+            if final_guidance_text and selected_voice.get('source') == 'crosswalk' and ',' in final_guidance_text:
+                # 组合语音只保留第一部分，避免队列积压
+                voice_parts = split_combined_voice(final_guidance_text)
+                if voice_parts:
+                    logger.info(f"[斑马线语音] 组合播报检测到{len(voice_parts)}部分，只保留第一部分保持实时")
+                    final_guidance_text = voice_parts[0]
             if final_guidance_text:
-                try:
-                    # 【优化】组合语音只播第一部分，避免队列积压
-                    if selected_voice.get('source') == 'crosswalk' and ',' in final_guidance_text:
-                        voice_parts = split_combined_voice(final_guidance_text)
-                        logger.info(f"[斑马线语音] 组合播报检测到{len(voice_parts)}部分，只播第一部分保持实时")
-                        # 只播放第一部分，后续部分丢弃以保持实时性
-                        if voice_parts:
-                            play_voice_text(voice_parts[0])
-                            logger.info(f"[语音播报] 优先级{selected_voice['priority']}: {voice_parts[0]}")
-                    else:
-                        play_voice_text(final_guidance_text)
-                        logger.info(f"[语音播报] 优先级{selected_voice['priority']}: {final_guidance_text}")
-                except Exception as e:
-                    logger.error(f"[语音播报] 播放失败: {e}")
+                logger.info(f"[语音选择] 优先级{selected_voice['priority']}: {final_guidance_text}")
         else:
             final_guidance_text = ""
         
@@ -808,7 +804,7 @@ class BlindPathNavigator:
         
         # 8. 返回结果
         return ProcessingResult(
-            guidance_text=guidance_text,
+            guidance_text=final_guidance_text,
             visualizations=frame_visualizations,
             annotated_image=annotated_image,
             state_info={
@@ -1342,8 +1338,9 @@ class BlindPathNavigator:
         NEAR_DISTANCE_AREA_THRESHOLD = 0.12  # 提高到0.12
         near_obstacles = [
             obs for obs in self.last_detected_obstacles
-            if (obs.get('bottom_y_ratio', 0) > NEAR_DISTANCE_Y_THRESHOLD or
-                obs.get('area_ratio', 0) > NEAR_DISTANCE_AREA_THRESHOLD)
+            if (str(obs.get('name', '')).strip().lower() != 'person' and
+                (obs.get('bottom_y_ratio', 0) > NEAR_DISTANCE_Y_THRESHOLD or
+                 obs.get('area_ratio', 0) > NEAR_DISTANCE_AREA_THRESHOLD))
         ]
         
         # 如果有近距离障碍物，应用相同的播报逻辑
@@ -2170,6 +2167,12 @@ class BlindPathNavigator:
                 obs.get('area_ratio', 0) > NEAR_DISTANCE_AREA_THRESHOLD):
                 near_obstacles.append(obs)
         
+        # 【新增】排除 person（人）：识别到人时不播报，其余障碍物照常播报
+        near_obstacles = [
+            obs for obs in near_obstacles
+            if str(obs.get('name', '')).strip().lower() != 'person'
+        ]
+        
         if near_obstacles:
             # 获取最主要的障碍物（面积最大）
             main_obstacle = max(near_obstacles, key=lambda x: x.get('area_ratio', 0))
@@ -2199,7 +2202,7 @@ class BlindPathNavigator:
         """检查并处理障碍物"""
         # 使用缓存策略
         if self.frame_counter % self.OBSTACLE_DETECTION_INTERVAL == 0:
-            final_obstacles = self._detect_obstacles(image, mask)
+            final_obstacles = self._detect_obstacles(image)
             # 【新增】稳定化障碍物，避免重复叠加
             if hasattr(self, 'prev_gray') and self.prev_gray is not None:
                 curr_gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -2228,8 +2231,9 @@ class BlindPathNavigator:
         
         near_obstacles = [
             obs for obs in final_obstacles
-            if (obs.get('bottom_y_ratio', 0) > NEAR_DISTANCE_Y_THRESHOLD or
-                obs.get('area_ratio', 0) > NEAR_DISTANCE_AREA_THRESHOLD)
+            if (str(obs.get('name', '')).strip().lower() != 'person' and
+                (obs.get('bottom_y_ratio', 0) > NEAR_DISTANCE_Y_THRESHOLD or
+                 obs.get('area_ratio', 0) > NEAR_DISTANCE_AREA_THRESHOLD))
         ]
         
         return near_obstacles
@@ -2350,40 +2354,74 @@ class BlindPathNavigator:
         return guidance_text
     
     def _add_obstacle_visualization(self, obstacle, visualizations, pulse_effect=False):
-        """添加障碍物可视化（简化版：仅边框，近红远黄）"""
+        """添加障碍物可视化：半透明掩码 + 外框 + 中文类别标签（近红远黄）。"""
         try:
-            # 计算障碍物危险等级
             bottom_y_ratio = obstacle.get('bottom_y_ratio', 0)
             area_ratio = obstacle.get('area_ratio', 0)
-            
-            # 判断是否为近距离障碍物
-            is_near = bottom_y_ratio > 0.7 or area_ratio > 0.1  # 近距离障碍物
-            
-            # 添加 mask 边框可视化（如果有）
+            is_near = bottom_y_ratio > 0.7 or area_ratio > 0.1
+
+            name = str(obstacle.get('name', '')).strip()
+            label = self._to_cn_obstacle(name) if name else '障碍物'
+            conf = obstacle.get('confidence')
+            if isinstance(conf, (int, float)):
+                label = f"{label} {float(conf) * 100:.0f}%"
+
+            outline_color = "rgba(255, 0, 0, 0.95)" if is_near else "rgba(255, 200, 0, 0.9)"
+            fill_color = "rgba(255, 0, 0, 0.18)" if is_near else "rgba(255, 200, 0, 0.14)"
+
+            # 掩码轮廓 → 半透明填充 + 描边
             if 'mask' in obstacle and obstacle['mask'] is not None:
                 mask = obstacle['mask']
                 contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-                
                 if contours:
-                    # 找到最大的轮廓
                     max_contour = max(contours, key=cv2.contourArea)
-                    points = max_contour.squeeze(1)[::5].tolist()
-                    
-                    # 根据距离选择边框颜色：近距离红色，远距离黄色
-                    if is_near:
-                        outline_color = "rgba(255, 0, 0, 1.0)"  # 红色
-                        thickness = 3
-                    else:
-                        outline_color = "rgba(255, 255, 0, 0.8)"  # 黄色
-                        thickness = 2
-                    
-                    # 只添加边框，不添加填充和文字
-                    visualizations.append({
-                        "type": "outline",
-                        "points": points,
-                        "color": outline_color,
-                        "thickness": thickness
-                    })
+                    pts = max_contour.squeeze(1)
+                    if pts.ndim == 1:
+                        pts = pts.reshape(1, -1)
+                    step = max(1, len(pts) // 12)
+                    points = pts[::step].tolist()
+                    if len(points) >= 3:
+                        visualizations.append({
+                            "type": "obstacle_mask",
+                            "points": points,
+                            "color": fill_color,
+                        })
+                        visualizations.append({
+                            "type": "outline",
+                            "points": points,
+                            "color": outline_color,
+                            "thickness": 3 if is_near else 2,
+                        })
+
+            # 边界框 + 标签：优先用 box_coords，否则由掩码反推
+            x1 = y1 = x2 = y2 = None
+            box = obstacle.get('box_coords')
+            if box:
+                try:
+                    x1, y1, x2, y2 = (int(v) for v in box)
+                except Exception:
+                    x1 = y1 = x2 = y2 = None
+            if x1 is None and 'mask' in obstacle and obstacle['mask'] is not None:
+                ys, xs = np.where(obstacle['mask'] > 0)
+                if len(xs):
+                    x1, y1, x2, y2 = int(xs.min()), int(ys.min()), int(xs.max()), int(ys.max())
+
+            if x1 is not None and x2 > x1 and y2 > y1:
+                visualizations.append({
+                    "type": "rectangle",
+                    "top_left": (x1, y1),
+                    "bottom_right": (x2, y2),
+                    "color": outline_color,
+                    "filled": False,
+                    "thickness": 2,
+                })
+                visualizations.append({
+                    "type": "text_with_bg",
+                    "text": label,
+                    "position": [x1, max(0, y1 - 24)],
+                    "font_scale": 0.55,
+                    "color": "rgba(255, 255, 255, 1.0)",
+                })
         except Exception as e:
             logger.error(f"[_add_obstacle_visualization] 添加障碍物可视化失败: {e}")
 
@@ -2682,18 +2720,12 @@ class BlindPathNavigator:
             return '障碍物'
 
     def _speech_for_obstacle(self, name: str) -> str:
+        # 导盲模式：除 person 以外的任何障碍物统一播报“前方有障碍物请注意躲避”。
+        # person 不是障碍物，不播报（避免把行人误报为危险物）。
         k = (name or '').strip().lower()
-        if k == 'person': return "前方有人，注意避让。"
-        if k == 'car': return "前方有车，注意避让。"
-        if k == 'bicycle': return "前方有自行车，停一下。"
-        if k == 'motorcycle': return "前方有摩托车，停一下。"
-        if k == 'bus': return "前方有公交车，停一下。"
-        if k == 'truck': return "前方有卡车，停一下。"
-        if k == 'scooter': return "前方有电瓶车，停一下。"
-        if k == 'stroller': return "前方有婴儿车，停一下。"
-        if k == 'dog': return "前方有狗，停一下。"
-        if k == 'animal': return "前方有动物，停一下。"
-        return "前方有障碍物，注意避让。"
+        if k == 'person':
+            return ""
+        return "前方有障碍物请注意躲避"
 
     def _draw_command_button(self, image, text):
         """绘制底部中央的指令按钮（与斑马线模式统一）"""
@@ -3369,18 +3401,12 @@ class BlindPathNavigator:
         return stabilized
   
     def _speech_for_obstacle(self, name: str) -> str:
+        # 导盲模式：除 person 以外的任何障碍物统一播报“前方有障碍物请注意躲避”。
+        # person 不是障碍物，不播报（避免把行人误报为危险物）。
         k = (name or '').strip().lower()
-        if k == 'person': return "前方有人，注意避让。"
-        if k == 'car': return "前方有车，注意避让。"
-        if k == 'bicycle': return "前方有自行车，停一下。"
-        if k == 'motorcycle': return "前方有摩托车，停一下。"
-        if k == 'bus': return "前方有公交车，停一下。"
-        if k == 'truck': return "前方有卡车，停一下。"
-        if k == 'scooter': return "前方有电瓶车，停一下。"
-        if k == 'stroller': return "前方有婴儿车，停一下。"
-        if k == 'dog': return "前方有狗，停一下。"
-        if k == 'animal': return "前方有动物，停一下。"
-        return "前方有障碍物，注意避让。"
+        if k == 'person':
+            return ""
+        return "前方有障碍物请注意躲避"
 
     def _update_obstacle_properties(self, obs, H, W):
         """更新障碍物的派生属性"""

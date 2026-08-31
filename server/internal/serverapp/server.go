@@ -7,6 +7,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -352,6 +353,11 @@ func newServer(deviceToken, allowOrigin string) *server {
 }
 
 func Run(cfg Config) error {
+	// 生产环境默认关闭 Gin 调试日志；显式设置 GIN_MODE（如 debug）仍可覆盖。
+	if os.Getenv(gin.EnvGinMode) == "" {
+		gin.SetMode(gin.ReleaseMode)
+	}
+
 	// 按配置选择性启用视觉 worker、DashScope AI 和本地导航预录语音。
 	app := newServer(cfg.DeviceToken, cfg.CORSAllowOrigin)
 	if cfg.VisionWorkerURL != "" {
@@ -385,6 +391,8 @@ func Run(cfg Config) error {
 	go app.listenUDP(cfg.UDPAddr)
 
 	router := app.newRouter()
+	// 服务直连设备/浏览器、不经反向代理，显式声明不信任任何代理。
+	_ = router.SetTrustedProxies(nil)
 	log.Printf("http listening on %s", cfg.HTTPAddr)
 	return router.Run(cfg.HTTPAddr)
 }

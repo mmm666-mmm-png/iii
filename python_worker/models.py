@@ -103,7 +103,7 @@ def init_all_models():
         # --- [1] 加载通用的障碍物检测器 (ObstacleDetectorClient) ---
         global obstacle_detector_client
         logger.info("[1/4] 正在加载通用障碍物检测模型 (ObstacleDetectorClient)...")
-        obstacle_detector_client = ObstacleDetectorClient(model_path=model_path("yoloe-11l-seg.pt"))
+        obstacle_detector_client = ObstacleDetectorClient(model_path=model_path(os.getenv("AIGLASS_OBS_MODEL", "block.pt")))
 
         # 🔥🔥🔥 【核心修复】在这里添加缺失的设备转移代码 🔥🔥🔥
         if hasattr(obstacle_detector_client, 'model') and obstacle_detector_client.model is not None:

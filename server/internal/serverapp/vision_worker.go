@@ -93,6 +93,7 @@ type visionWorker struct {
 	processing       bool
 	lastSubmittedAt  time.Time
 	lastGuidanceSent string
+	lastGuidanceAt   time.Time
 }
 
 func newVisionWorker(server *server, rawURL string, interval time.Duration) (*visionWorker, error) {
@@ -106,7 +107,7 @@ func newVisionWorker(server *server, rawURL string, interval time.Duration) (*vi
 		return nil, err
 	}
 	if interval <= 0 {
-		interval = 450 * time.Millisecond
+		interval = 200 * time.Millisecond
 	}
 	worker := &visionWorker{
 		server:   server,
@@ -264,9 +265,11 @@ func (v *visionWorker) processFrame(meta *PacketMeta, payload []byte) {
 	}
 
 	guidance := strings.TrimSpace(response.GuidanceText)
-	if guidance != "" && guidance != v.lastGuidanceSent {
-		// 相同引导不重复广播，避免前端事件列表和设备语音被同一句刷满。
+	// 相同引导短窗口内不重复广播，避免前端事件列表和设备语音被同一句刷满；
+	// 超过 3 秒后允许再次播报（例如障碍物持续在眼前时周期性提醒）。
+	if guidance != "" && (guidance != v.lastGuidanceSent || time.Since(v.lastGuidanceAt) > 3*time.Second) {
 		v.lastGuidanceSent = guidance
+		v.lastGuidanceAt = time.Now()
 		v.broadcastEvent(visionEventMessage{
 			Type:         "vision_event",
 			Event:        "guidance",

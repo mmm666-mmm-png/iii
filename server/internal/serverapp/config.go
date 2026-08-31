@@ -46,7 +46,7 @@ func LoadConfig(args []string) (Config, error) {
 		DeviceToken:                     envOrDefault("DEVICE_TOKEN", "change-me"),
 		CORSAllowOrigin:                 envOrDefault("CORS_ALLOW_ORIGIN", "*"),
 		VisionWorkerURL:                 envOrDefault("VISION_WORKER_URL", "http://127.0.0.1:18082"),
-		VisionFrameIntervalMs:           envInt("VISION_FRAME_INTERVAL_MS", 450),
+		VisionFrameIntervalMs:           envInt("VISION_FRAME_INTERVAL_MS", 200),
 		DashScopeAPIKey:                 envOrDefault("DASHSCOPE_API_KEY", ""),
 		DashScopeRegion:                 envOrDefault("DASHSCOPE_REGION", "cn"),
 		DashScopeModel:                  envOrDefault("DASHSCOPE_MODEL", "qwen3-omni-flash-realtime"),

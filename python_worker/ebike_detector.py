@@ -49,6 +49,13 @@ CLASSES: List[Dict[str, Any]] = [
 ]
 # 训练/标注时用的类别 id（与 yolo_train/data.yaml 一致）
 CLS_INDEX: Dict[str, int] = {c["cls"]: i for i, c in enumerate(CLASSES)}
+# 模型输出类别名 -> 规范 cls（兼容 names 为中文名或英文名的模型，如接入的共享电动车模型）
+NAME_TO_CLS: Dict[str, str] = {}
+for _c in CLASSES:
+    NAME_TO_CLS[_c["cls"]] = _c["cls"]
+    NAME_TO_CLS[_c["cn"]] = _c["cls"]
+# 兼容单类模型 bike.pt（平台默认类名 .video_frames）→ 归为 bicycle（自行车）
+NAME_TO_CLS[".video_frames"] = "bicycle"
 # YOLOE 提示词 -> 类别名
 PROMPT_TO_CLS: Dict[str, str] = {}
 for _c in CLASSES:
@@ -167,7 +174,8 @@ class EbikeDetector:
         for i in range(len(xyxy)):
             cid = int(cls_ids[i])
             name = str((self._names or {}).get(cid, "unknown"))
-            objs.append(self._make_obj(name, xyxy[i], confs[i], W, H))
+            cls_name = NAME_TO_CLS.get(name, name)  # 中文/英文类别名统一映射到规范 cls
+            objs.append(self._make_obj(cls_name, xyxy[i], confs[i], W, H))
         return objs
 
     def _detect_yoloe(self, image: np.ndarray) -> List[Dict[str, Any]]:
